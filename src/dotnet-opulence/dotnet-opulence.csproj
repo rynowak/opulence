@@ -11,7 +11,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.4.0" />
+    <PackageReference Include="System.Commandline.Experimental" Version="0.3.0-alpha.19577.1" />
+    <PackageReference Include="System.Commandline.Rendering" Version="0.3.0-alpha.19577.1" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Opulence\Opulence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="build\**" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="buildMultiTargeting\**" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Imports.targets" />
+  </ItemGroup>
+  
 </Project>
