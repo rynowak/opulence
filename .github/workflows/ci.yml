@@ -1,0 +1,39 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v1.0.0
+      with:
+        version: 3.1.100
+     
+    - name: dotnet build
+      run: dotnet build opulence.sln -c Release
+      
+    - name: dotnet test
+      run: dotnet test opulence.sln -c Release --no-build
+
+    - name: dotnet pack
+      run: dotnet pack opulence.sln -c Release --no-build --include-source --include-symbols
+
+    - name: setup nuget
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: NuGet/setup-nuget@v1.0.2
+      with:
+        nuget-version: latest
+
+    - name: add package repository
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: nuget source Add -Config nuget.config -Name github -Source https://nuget.pkg.github.com/rynowak/index.json -UserName rynowak -Password ${{ secrets.GITHUB_TOKEN }} -StorePasswordInClearText
+
+    - name: push packages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: dotnet nuget push **/*.nupkg -s https://nuget.pkg.github.com/rynowak/index.json --skip-duplicate
