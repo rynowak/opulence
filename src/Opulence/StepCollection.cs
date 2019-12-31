@@ -4,7 +4,7 @@ namespace Opulence
 {
     public sealed class StepCollection : Collection<Step>
     {
-        public T? GetT<T>() where T : Step
+        public T? Get<T>() where T : Step
         {
             for (var i = 0; i < Count; i++)
             {
