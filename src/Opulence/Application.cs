@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.IO;
 
 namespace Opulence
 {
@@ -7,6 +7,8 @@ namespace Opulence
         public FrameworkCollection Frameworks { get; } = new FrameworkCollection();
         
         public string Name { get; set; } = default!;
+
+        public string ProjectDirectory => Path.GetDirectoryName(ProjectFilePath);
 
         public string ProjectFilePath { get; set; } = default!;
 

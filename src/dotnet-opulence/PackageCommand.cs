@@ -11,51 +11,39 @@ using Microsoft.CodeAnalysis.Scripting;
 
 namespace Opulence
 {
-    public class PackageCommandHandler
+    public class PackageCommand
     {
-        public static async Task ExecuteAsync(IConsole console, string projectFilePath)
+        public static Command Create()
         {
-            Application application;
-            try
+            var command = new Command("package", "package the application")
             {
-                application = await InitializeApplicationAsync(console, projectFilePath);
-            }
-            catch (ApplicationException ex)
+                StandardOptions.ProjectFile,
+            };
+            command.Handler = CommandHandler.Create<IConsole, FileInfo>(async (console, projectFile) =>
             {
-                console.Error.WriteLine(ex.Message);
-                return;
-            }
+                await ExecuteAsync(console, projectFile);
+            });
 
-            try
-            {
-                await EvaluateScriptAsync(console, application, projectFilePath);
-            }
-            catch (ApplicationException ex)
-            {
-                console.Error.WriteLine(ex.Message);
-                return;
-            }
+            return command;
+        }
+
+        private static async Task ExecuteAsync(IConsole console, FileInfo projectFile)
+        {
+            var application = await InitializeApplicationAsync(console, projectFile.FullName);
+            await EvaluateScriptAsync(console, application, projectFile.FullName);
 
             for (var i = 0; i < application.Steps.Count; i++)
             {
                 var step = application.Steps[i];
                 console.Out.WriteLine($"Executing Step: {step.DisplayName}");
 
-                try
+                if (step is ContainerStep container)
                 {
-                    if (step is ContainerStep container)
-                    {
-                        await BuildContainerImageAsync(console, application, container);
-                    }
-                    else if (step is HelmChartStep chart)
-                    {
-                        await BuildHelmChartAsync(console, application, application.Steps.Get<ContainerStep>()!, chart);
-                    }
+                    await BuildContainerImageAsync(console, application, container);
                 }
-                catch (ApplicationException ex)
+                else if (step is HelmChartStep chart)
                 {
-                    console.Error.WriteLine(ex.Message);
-                    return;
+                    await BuildHelmChartAsync(console, application, application.Steps.Get<ContainerStep>()!, chart);
                 }
             }
         }
@@ -68,13 +56,13 @@ namespace Opulence
             }
             catch (Exception ex)
             {
-                throw new ApplicationException("Failed to install targets.", ex);
+                throw new CommandException("Failed to install targets.", ex);
             }
 
             var application = new Application()
             {
                 Name = Path.GetFileNameWithoutExtension(projectFilePath),
-                ProjectFilePath = Path.GetFullPath(projectFilePath),
+                ProjectFilePath = projectFilePath,
                 Steps =
                 {
                     new ContainerStep(),
@@ -93,19 +81,19 @@ namespace Opulence
                     workingDir: Path.GetDirectoryName(projectFilePath),
                     stdOut: o =>
                     {
-                        console.SetTerminalForeground(ConsoleColor.Gray);
+                        console.SetTerminalForegroundColor(ConsoleColor.Gray);
                         console.Out.WriteLine("\t" + o);
                         console.ResetTerminalForegroundColor();
                     },
                     stdErr: o =>
                     {
-                        console.SetTerminalForeground(ConsoleColor.Red);
+                        console.SetTerminalForegroundColor(ConsoleColor.Red);
                         console.Error.WriteLine("\t" + o);
                         console.ResetTerminalForegroundColor();
                     });
                 if (exitCode != 0)
                 {
-                    throw new ApplicationException("Getting project info failed.");
+                    throw new CommandException("Getting project info failed.");
                 }
 
                 var lines = await File.ReadAllLinesAsync(output);
@@ -168,7 +156,7 @@ namespace Opulence
                     builder.AppendLine(CSharpDiagnosticFormatter.Instance.Format(diagnostic));
                 }
 
-                throw new ApplicationException(builder.ToString());
+                throw new CommandException(builder.ToString());
             }
 
             var obj = new PackageGlobals()
@@ -190,22 +178,22 @@ namespace Opulence
                 var exitCode = await Process.ExecuteAsync(
                     $"docker",
                     $"build . -t {container.ImageName}:{container.ImageTag} -f \"{tempFilePath}\"",
-                    Path.GetDirectoryName(application.ProjectFilePath),
+                    application.ProjectDirectory,
                     stdOut: o =>
                     {
-                        console.SetTerminalForeground(ConsoleColor.Gray);
+                        console.SetTerminalForegroundColor(ConsoleColor.Gray);
                         console.Out.WriteLine("\t" + o);
                         console.ResetTerminalForegroundColor();
                     },
                     stdErr: o =>
                     {
-                        console.SetTerminalForeground(ConsoleColor.Red);
+                        console.SetTerminalForegroundColor(ConsoleColor.Red);
                         console.Error.WriteLine("\t" + o);
                         console.ResetTerminalForegroundColor();
                     });
                 if (exitCode != 0)
                 {
-                    throw new ApplicationException("Docker build failed.");
+                    throw new CommandException("Docker build failed.");
                 }
             }
             finally
@@ -239,16 +227,16 @@ namespace Opulence
 
             if (container.BaseImageTag == null)
             {
-                throw new ApplicationException($"Unsupported TFM {application.TargetFramework}.");
+                throw new CommandException($"Unsupported TFM {application.TargetFramework}.");
             }
 
-            container.ImageName ??= Path.GetFileNameWithoutExtension(application.ProjectFilePath).ToLowerInvariant();
+            container.ImageName ??= application.Name.ToLowerInvariant();
             container.ImageTag ??= application.Version.Replace("+", "-");
         }
 
         private static Task BuildHelmChartAsync(IConsole console, Application application, ContainerStep container, HelmChartStep chart)
         {
-            var outputDirectoryPath = Path.Combine(Path.GetDirectoryName(application.ProjectFilePath)!, "bin");
+            var outputDirectoryPath = Path.Combine(application.ProjectDirectory, "bin");
             return HelmChartGenerator.GenerateAsync(console, application, container, chart, outputDirectoryPath);
         }
 

@@ -28,7 +28,7 @@ namespace System.CommandLine
             }
         }
 
-        public static void SetTerminalForeground(this IConsole console, ConsoleColor color)
+        public static void SetTerminalForegroundColor(this IConsole console, ConsoleColor color)
         {
             if (console.GetType().GetInterfaces().Any(i => i.Name == "ITerminal"))
             {
