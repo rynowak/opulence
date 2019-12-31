@@ -1,7 +1,6 @@
 ﻿using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -48,6 +47,10 @@ namespace Opulence
                     {
                         await BuildContainerImageAsync(console, application, container);
                     }
+                    else if (step is HelmChartStep chart)
+                    {
+                        await BuildHelmChartAsync(console, application, application.Steps.Get<ContainerStep>()!, chart);
+                    }
                 }
                 catch (ApplicationException ex)
                 {
@@ -71,10 +74,11 @@ namespace Opulence
             var application = new Application()
             {
                 Name = Path.GetFileNameWithoutExtension(projectFilePath),
-                ProjectFilePath = projectFilePath,
+                ProjectFilePath = Path.GetFullPath(projectFilePath),
                 Steps =
                 {
                     new ContainerStep(),
+                    new HelmChartStep(),
                 },
             };
 
@@ -240,6 +244,12 @@ namespace Opulence
 
             container.ImageName ??= Path.GetFileNameWithoutExtension(application.ProjectFilePath).ToLowerInvariant();
             container.ImageTag ??= application.Version.Replace("+", "-");
+        }
+
+        private static Task BuildHelmChartAsync(IConsole console, Application application, ContainerStep container, HelmChartStep chart)
+        {
+            var outputDirectoryPath = Path.Combine(Path.GetDirectoryName(application.ProjectFilePath)!, "bin");
+            return HelmChartGenerator.GenerateAsync(console, application, container, chart, outputDirectoryPath);
         }
 
         public class PackageGlobals
