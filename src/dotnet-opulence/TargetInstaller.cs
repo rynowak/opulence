@@ -36,7 +36,7 @@ namespace Opulence
             using var stream = toolAssembly.GetManifestResourceStream(toolImportTargetsResourceName);
             if (stream == null)
             {
-                throw new ApplicationException("Failed to find resource. Valid names: " + string.Join(", ", toolAssembly.GetManifestResourceNames()));
+                throw new CommandException("Failed to find resource. Valid names: " + string.Join(", ", toolAssembly.GetManifestResourceNames()));
             }
 
             var targetBytes = new byte[stream.Length];

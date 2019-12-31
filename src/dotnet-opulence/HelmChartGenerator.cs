@@ -57,13 +57,13 @@ namespace Opulence
                     workingDir: chartDirectoryPath,
                     stdOut: o =>
                     {
-                        console.SetTerminalForeground(ConsoleColor.Gray);
+                        console.SetTerminalForegroundColor(ConsoleColor.Gray);
                         console.Out.WriteLine("\t" + o);
                         console.ResetTerminalForegroundColor();
                     },
                     stdErr: o =>
                     {
-                        console.SetTerminalForeground(ConsoleColor.Red);
+                        console.SetTerminalForegroundColor(ConsoleColor.Red);
                         console.Error.WriteLine("\t" + o);
                         console.ResetTerminalForegroundColor();
                     });
