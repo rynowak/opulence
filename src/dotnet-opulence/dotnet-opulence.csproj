@@ -25,6 +25,7 @@
   <ItemGroup>
     <Content Include="build\**" CopyToOutputDirectory="PreserveNewest"/>
     <Content Include="buildMultiTargeting\**" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="Templates\**" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <ItemGroup>
