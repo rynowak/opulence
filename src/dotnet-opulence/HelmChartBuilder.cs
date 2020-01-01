@@ -33,15 +33,30 @@ namespace Opulence
 
             var outputDirectoryPath = Path.Combine(application.ProjectDirectory, "bin");
             using var tempDirectory = TempDirectory.Create();
+            
+            HelmChartGenerator.ApplyHelmChartDefaults(application, container, chart);
 
-            await HelmChartGenerator.GenerateAsync(output, application, container, chart, new DirectoryInfo(tempDirectory.DirectoryPath));
+            var chartRoot = Path.Combine(application.ProjectDirectory, "charts");
+            var chartPath = Path.Combine(chartRoot, chart.ChartName);
+            if (Directory.Exists(chartPath))
+            {
+                output.WriteDebugLine($"found existing chart in '{chartPath}'");
+            }
+            else
+            {
+                chartRoot = tempDirectory.DirectoryPath;
+                chartPath = Path.Combine(chartRoot, chart.ChartName);
+                output.WriteDebugLine($"generating chart in '{chartPath}");
+                await HelmChartGenerator.GenerateAsync(output, application, container, chart, new DirectoryInfo(tempDirectory.DirectoryPath));
+            }
 
             output.WriteDebugLine("running helm package");
+            output.WriteDebugLine($"> helm package -d \"{outputDirectoryPath}\" --version {application.Version.Replace('+', '-')} --app-version {application.Version.Replace('+', '-')}");
             var capture = output.Capture();
             var exitCode = await Process.ExecuteAsync(
                 "helm",
-                $"package . -d {outputDirectoryPath}",
-                workingDir: Path.Combine(tempDirectory.DirectoryPath, application.Name),
+                $"package . -d \"{outputDirectoryPath}\" --version {application.Version.Replace('+', '-')} --app-version {application.Version.Replace('+', '-')}",
+                workingDir: chartPath,
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
 
