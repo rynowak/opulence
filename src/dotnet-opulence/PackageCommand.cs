@@ -25,7 +25,21 @@ namespace Opulence
 
         private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile)
         {
-            var application = ApplicationFactory.CreateDefault(projectFile);
+            var config = await OpulenceConfigFactory.ReadConfigAsync(output, projectFile.DirectoryName);
+            if (config == null)
+            {
+                // Allow operating without config for now.
+                output.WriteInfoLine("config was not found, using defaults");
+                config = new OpulenceConfig()
+                {
+                    Container = new ContainerConfig()
+                    {
+                        Registry = new RegistryConfig(),
+                    }
+                };
+            }
+
+            var application = ApplicationFactory.CreateDefault(config, projectFile);
             await ProjectReader.InitializeAsync(output, application);
             await ScriptRunner.RunProjectScriptAsync(output, application);
 

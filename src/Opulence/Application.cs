@@ -4,6 +4,8 @@ namespace Opulence
 {
     public sealed class Application
     {
+        public OpulenceConfig Config { get; set; } = default!;
+        
         public FrameworkCollection Frameworks { get; } = new FrameworkCollection();
         
         public string Name { get; set; } = default!;

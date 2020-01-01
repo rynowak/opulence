@@ -5,8 +5,13 @@ namespace Opulence
 {
     public static class ApplicationFactory
     {
-        public static Application CreateDefault(FileInfo projectFile)
+        public static Application CreateDefault(OpulenceConfig config, FileInfo projectFile)
         {
+            if (config is null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
             if (projectFile is null)
             {
                 throw new ArgumentNullException(nameof(projectFile));
@@ -14,6 +19,7 @@ namespace Opulence
 
             var application = new Application()
             {
+                Config = config,
                 Name = Path.GetFileNameWithoutExtension(projectFile.FullName),
                 ProjectFilePath = projectFile.FullName,
                 Steps =

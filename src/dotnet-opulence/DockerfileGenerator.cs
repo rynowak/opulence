@@ -107,7 +107,16 @@ namespace Opulence
 
             container.BuildImageName ??= "mcr.microsoft.com/dotnet/core/sdk";
             container.BuildImageTag ??= "3.1";
-            container.ImageName ??= application.Name.ToLowerInvariant();
+
+            if (container.ImageName == null && application.Config.Container?.Registry?.Hostname == null)
+            {
+                container.ImageName ??= application.Name.ToLowerInvariant();
+            }
+            else if (container.ImageName == null && application.Config.Container?.Registry?.Hostname != null)
+            {
+                container.ImageName ??= $"{application.Config.Container?.Registry?.Hostname}/{application.Name.ToLowerInvariant()}";
+            }
+            
             container.ImageTag ??= application.Version.Replace("+", "-");
         }
     }
