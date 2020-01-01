@@ -1,0 +1,41 @@
+{{- $ca := genCA "opulence-logoverride-webhook-ca" 3650 }}
+{{- $cn := printf "opulence-logoverride-webhook" }}
+{{- $altName1 := printf "opulence-logoverride-webhook.%s" .Release.Namespace }}
+{{- $altName2 := printf "opulence-logoverride-webhook.%s.svc" .Release.Namespace }}
+{{- $altName3 := printf "opulence-logoverride-webhook.%s.svc.cluster" .Release.Namespace }}
+{{- $altName4 := printf "opulence-logoverride-webhook.%s.svc.cluster.local" .Release.Namespace }}
+{{- $cert := genSignedCert $cn nil (list $altName1 $altName2 $altName3 $altName4) 3650 $ca }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opulence-logoverride-webhook-cert
+  labels:
+    app: opulence-logoverride-webhook
+data:
+  tls.crt: {{ b64enc $cert.Cert }}
+  tls.key: {{ b64enc $cert.Key }}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: opulence-logoverride-webhook
+  labels:
+    app: opulence-logoverride-webhook
+webhooks:
+- name: opulence-logoverride-injector.dotnet.io
+  clientConfig:
+    service:
+      namespace: {{ .Release.Namespace }}
+      name: opulence-logoverride-webhook
+      path: "/mutate"
+    caBundle: {{ b64enc $ca.Cert }}
+  rules:
+  - apiGroups:
+    - "*"
+    apiVersions:
+    - "*"
+    resources:
+    - deployments
+    operations:
+    - CREATE
+  failurePolicy: Ignore

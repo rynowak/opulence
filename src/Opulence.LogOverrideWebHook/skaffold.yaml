@@ -1,0 +1,17 @@
+apiVersion: skaffold/v2alpha1
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image: rynowak.azurecr.io/opulence.logoverridewebhook
+deploy:
+  helm:
+    releases:
+    - name: opulence-logoverride-webhook
+      chartPath: charts/opulence-logoverride-webhook
+      namespace: opulence-system
+      wait: true
+      recreatePods: true
+      values:
+        imageName: rynowak.azurecr.io/opulence.logoverridewebhook

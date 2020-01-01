@@ -1,0 +1,12 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: opulence-logoverride-webhook
+subjects:
+  - kind: ServiceAccount
+    name: opulence-logoverride-webhook-account
+    namespace: opulence-system
+roleRef:
+  kind: ClusterRole
+  name: opulence-logoverride-webhook
+  apiGroup: rbac.authorization.k8s.io
