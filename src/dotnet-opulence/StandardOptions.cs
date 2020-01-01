@@ -17,6 +17,7 @@ namespace Opulence
                         Arity = ArgumentArity.ExactlyOne,
                         Name = "project-file or directory",
                     },
+                    Required = true,
                 };
 
                 static bool TryConvert(SymbolResult symbol, out FileInfo file)
@@ -62,6 +63,21 @@ namespace Opulence
                     file = default!;
                     return false;
                 }
+            }
+        }
+    
+        public static Option Verbosity
+        {
+            get
+            {
+                return new Option(new [] { "-v", "--verbosity" }, "output verbostiy")
+                {
+                    Argument = new Argument<Verbosity>("one of: quiet|info|debug", Opulence.Verbosity.Info)
+                    {
+                        Arity = ArgumentArity.ExactlyOne,
+                    },
+                    Required = false,
+                };
             }
         }
     }

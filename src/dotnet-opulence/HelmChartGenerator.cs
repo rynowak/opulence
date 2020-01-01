@@ -1,6 +1,4 @@
 using System;
-using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -8,70 +6,71 @@ namespace Opulence
 {
     internal static class HelmChartGenerator
     {
-        public static async Task GenerateAsync(IConsole console, Application application, ContainerStep container, HelmChartStep chart, string outputDirectoryPath)
+        public static async Task GenerateAsync(OutputContext output, Application application, ContainerStep container, HelmChartStep chart, DirectoryInfo outputDirectory)
         {
-            var directoryPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            var chartDirectoryPath = Path.Combine(directoryPath, application.Name.ToLowerInvariant());
-
-            try
+            if (output is null)
             {
-                Directory.CreateDirectory(directoryPath);
-                Directory.CreateDirectory(chartDirectoryPath);
+                throw new ArgumentNullException(nameof(output));
+            }
 
-                var templateDirectoryPath = Path.Combine(
-                    Path.GetDirectoryName(typeof(HelmChartGenerator).Assembly.Location)!,
-                    "Templates",
-                    "Helm");
+            if (application is null)
+            {
+                throw new ArgumentNullException(nameof(application));
+            }
 
-                DirectoryCopy.Copy(templateDirectoryPath, chartDirectoryPath);
+            if (container is null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
 
-                // Write Chart.yaml
-                //
-                // apiVersion: v1
-                // name: <appname>
-                // version: <version>
-                // appVersion: <version>
-                File.WriteAllLines(Path.Combine(chartDirectoryPath, "Chart.yaml"), new[]
-                {
+            if (chart is null)
+            {
+                throw new ArgumentNullException(nameof(chart));
+            }
+
+            if (outputDirectory is null)
+            {
+                throw new ArgumentNullException(nameof(outputDirectory));
+            }
+
+            output.WriteDebugLine("generating helm chart");
+
+            // The directory with the charts needs to be the same as the chart name
+            var chartDirectoryPath = Path.Combine(outputDirectory.FullName, application.Name.ToLowerInvariant());
+            Directory.CreateDirectory(chartDirectoryPath);
+
+            var templateDirectoryPath = Path.Combine(
+                Path.GetDirectoryName(typeof(HelmChartGenerator).Assembly.Location)!,
+                "Templates",
+                "Helm");
+
+            DirectoryCopy.Copy(templateDirectoryPath, chartDirectoryPath);
+
+            // Write Chart.yaml
+            //
+            // apiVersion: v1
+            // name: <appname>
+            // version: <version>
+            // appVersion: <version>
+            await File.WriteAllLinesAsync(Path.Combine(chartDirectoryPath, "Chart.yaml"), new[]
+            {
                     $"apiVersion: v1",
                     $"name: {application.Name.ToLowerInvariant()}",
                     $"version: {application.Version.Replace('+', '-')}",
                     $"appVersion: {application.Version.Replace('+', '-')}"
                 });
 
-                // Write values.yaml
-                //
-                // image:
-                //   repository: rynowak.azurecr.io/rochambot/gamemaster
-                File.WriteAllLines(Path.Combine(chartDirectoryPath, "values.yaml"), new[]
-                {
-                    $"image:",
-                    $"  repository: {container.ImageName}",
-                });
-
-                console.Out.WriteLine("Packaging Helm Chart...");
-
-                await Process.ExecuteAsync(
-                    "helm",
-                    $"package . -d {outputDirectoryPath}",
-                    workingDir: chartDirectoryPath,
-                    stdOut: o =>
-                    {
-                        console.SetTerminalForegroundColor(ConsoleColor.Gray);
-                        console.Out.WriteLine("\t" + o);
-                        console.ResetTerminalForegroundColor();
-                    },
-                    stdErr: o =>
-                    {
-                        console.SetTerminalForegroundColor(ConsoleColor.Red);
-                        console.Error.WriteLine("\t" + o);
-                        console.ResetTerminalForegroundColor();
-                    });
-            }
-            finally
+            // Write values.yaml
+            //
+            // image:
+            //   repository: rynowak.azurecr.io/rochambot/gamemaster
+            await File.WriteAllLinesAsync(Path.Combine(chartDirectoryPath, "values.yaml"), new[]
             {
-                Directory.Delete(directoryPath, recursive: true);
-            }
+                $"image:",
+                $"  repository: {container.ImageName}",
+            });
+
+            output.WriteDebugLine("done generating helm chart");
         }
     }
 }
