@@ -12,9 +12,7 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/src/dotnet-opulence/bin/Debug/netcoreapp3.1/dotnet-opulence.dll",
             "args": [
-                "package",
-                "-p",
-                "../../samples/ApiSample/ApiSample.csproj"
+                "package"
             ],
             "cwd": "${workspaceFolder}/src/dotnet-opulence",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

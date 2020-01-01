@@ -12,7 +12,7 @@ namespace Opulence
         {
             var command = new Command("generate", "generate assets")
             {
-                StandardOptions.ProjectFile,
+                StandardOptions.Project,
                 StandardOptions.Verbosity,
                 StandardOptions.Outputs,
 
@@ -22,10 +22,10 @@ namespace Opulence
                 },
             };
 
-            command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity, List<string>, bool>((console, projectFile, verbosity, outputs, force) =>
+            command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity, List<string>, bool>((console, project, verbosity, outputs, force) =>
             {
                 var output = new OutputContext(console, verbosity);
-                return ExecuteAsync(output, projectFile, outputs, force);
+                return ExecuteAsync(output, project, outputs, force);
             });
 
             return command;

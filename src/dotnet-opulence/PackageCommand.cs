@@ -11,13 +11,13 @@ namespace Opulence
         {
             var command = new Command("package", "package the application")
             {
-                StandardOptions.ProjectFile,
+                StandardOptions.Project,
                 StandardOptions.Verbosity,
             };
-            command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity>((console, projectFile, verbosity) =>
+            command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity>((console, project, verbosity) =>
             {
                 var output = new OutputContext(console, verbosity);
-                return ExecuteAsync(output, projectFile);
+                return ExecuteAsync(output, project);
             });
 
             return command;

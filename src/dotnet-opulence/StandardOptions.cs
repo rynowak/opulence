@@ -47,19 +47,83 @@ namespace Opulence
             }
         }
 
-        public static Option ProjectFile
+        public static Option Project
         {
             get
             {
-                return new Option(new [] { "-p", "--project-file" }, "application project file")
+                // This dance is necessary to try and put the intialization and validation
+                // of the project file in a single code path, and have the command line system
+                // be responsible for reporting the errors.
+
+                var argument = new Argument<FileInfo>(TryConvert)
                 {
-                    Argument = new Argument<FileInfo>(TryConvert)
-                    {
-                        Arity = ArgumentArity.ExactlyOne,
-                        Name = "project-file or directory",
-                    },
-                    Required = true,
+                    Arity = ArgumentArity.ZeroOrOne,
+                    Name = "project-file or directory",
                 };
+
+                argument.SetDefaultValue(() =>
+                {
+                    var directoryPath = Path.GetFullPath(".");
+                    if (TryFindProjectFile(directoryPath, out var projectFilePath, out var errorMessage))
+                    {
+                        return new FileInfo(projectFilePath);
+                    }
+                    else
+                    {
+                        // This might be called when we're not going to find anything. 
+                        // Just return null for now, and the validator will catch it.
+                        return null;
+                    }
+                });
+
+                argument.AddValidator(r =>
+                {
+                    var directoryPath = Path.GetFullPath(".");
+                    if (TryFindProjectFile(directoryPath, out var projectFilePath, out var errorMessage))
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return errorMessage;
+                    }
+                });
+
+                return new Option(new [] { "-p", "--project" }, "application project file")
+                {
+                    Argument = argument,
+                };
+
+                static bool TryFindProjectFile(string directoryPath, out string? projectFilePath, out string? errorMessage)
+                {
+                    var matches = new List<string>();
+                    foreach (var candidate in Directory.EnumerateFiles(directoryPath))
+                    {
+                        if (Path.GetExtension(candidate).EndsWith("proj"))
+                        {
+                            matches.Add(candidate);
+                        }
+                    }
+
+                    if (matches.Count == 0)
+                    {
+                        errorMessage = $"no project file was found in directory '{directoryPath}'.";
+                        projectFilePath = default;
+                        return false;
+                    }
+                    else if (matches.Count == 1)
+                    {
+                        errorMessage = null;
+                        projectFilePath = matches[0];
+                        return true;
+                    }
+                    else
+                    {
+                        errorMessage = $"more than one project file was found in directory '{directoryPath}'.";
+                        projectFilePath = default;
+                        return false;
+                    }
+                }
 
                 static bool TryConvert(SymbolResult symbol, out FileInfo file)
                 {
@@ -72,29 +136,14 @@ namespace Opulence
 
                     if (Directory.Exists(token))
                     {
-                        var matches = new List<string>();
-                        foreach (var candidate in Directory.EnumerateFiles(token))
+                        if (TryFindProjectFile(token, out var filePath, out var errorMessage))
                         {
-                            if (Path.GetExtension(candidate).EndsWith("proj"))
-                            {
-                                matches.Add(candidate);
-                            }
-                        }
-
-                        if (matches.Count == 0)
-                        {
-                            symbol.ErrorMessage = $"no project file was found in directory '{token}'.";
-                            file = default!;
-                            return false;
-                        }
-                        else if (matches.Count == 1)
-                        {
-                            file = new FileInfo(matches[0]);
+                            file = new FileInfo(filePath);
                             return true;
                         }
                         else
                         {
-                            symbol.ErrorMessage = $"more than one project file was found in directory '{token}'.";
+                            symbol.ErrorMessage = errorMessage;
                             file = default!;
                             return false;
                         }

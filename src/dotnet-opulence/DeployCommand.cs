@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,17 +14,18 @@ namespace Opulence
         {
             var command = new Command("deploy", "deploy the application")
             {
-                StandardOptions.ProjectFile,
+                StandardOptions.Project,
+                StandardOptions.Verbosity,
             };
-            command.Handler = CommandHandler.Create<IConsole, string>((console, projectFile) =>
+            command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity>((console, project, verbosity) =>
             {
-                return ExecuteAsync(console, projectFile);
+                return ExecuteAsync(console, project, verbosity);
             });
 
             return command;
         }
 
-        private static Task ExecuteAsync(IConsole console, string projectFile)
+        private static Task ExecuteAsync(IConsole console, FileInfo project, Verbosity verbosity)
         {
             return Task.CompletedTask;
         }
