@@ -35,8 +35,10 @@ namespace Opulence
 
             output.WriteDebugLine("generating helm chart");
 
+            ApplyHelmChartDefaults(application, container, chart);
+
             // The directory with the charts needs to be the same as the chart name
-            var chartDirectoryPath = Path.Combine(outputDirectory.FullName, application.Name.ToLowerInvariant());
+            var chartDirectoryPath = Path.Combine(outputDirectory.FullName, chart.ChartName);
             Directory.CreateDirectory(chartDirectoryPath);
 
             var templateDirectoryPath = Path.Combine(
@@ -54,11 +56,13 @@ namespace Opulence
             // appVersion: <version>
             await File.WriteAllLinesAsync(Path.Combine(chartDirectoryPath, "Chart.yaml"), new[]
             {
-                    $"apiVersion: v1",
-                    $"name: {application.Name.ToLowerInvariant()}",
-                    $"version: {application.Version.Replace('+', '-')}",
-                    $"appVersion: {application.Version.Replace('+', '-')}"
-                });
+                $"apiVersion: v1",
+                $"name: {chart.ChartName}",
+                $"# helm requires the version and appVersion to specified in Chart.yaml",
+                $"# opulence will override these values when packaging the chart",
+                $"version: {application.Version.Replace('+', '-')}",
+                $"appVersion: {application.Version.Replace('+', '-')}"
+            });
 
             // Write values.yaml
             //
@@ -71,6 +75,26 @@ namespace Opulence
             });
 
             output.WriteDebugLine("done generating helm chart");
+        }
+
+        public static void ApplyHelmChartDefaults(Application application, ContainerStep container, HelmChartStep chart)
+        {
+            if (application is null)
+            {
+                throw new ArgumentNullException(nameof(application));
+            }
+
+            if (container is null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            if (chart is null)
+            {
+                throw new ArgumentNullException(nameof(chart));
+            }
+
+            chart.ChartName ??= application.Name.ToLowerInvariant();
         }
     }
 }

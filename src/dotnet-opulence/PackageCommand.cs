@@ -14,10 +14,10 @@ namespace Opulence
                 StandardOptions.ProjectFile,
                 StandardOptions.Verbosity,
             };
-            command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity>(async (console, projectFile, verbosity) =>
+            command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity>((console, projectFile, verbosity) =>
             {
                 var output = new OutputContext(console, verbosity);
-                await ExecuteAsync(output, projectFile);
+                return ExecuteAsync(output, projectFile);
             });
 
             return command;

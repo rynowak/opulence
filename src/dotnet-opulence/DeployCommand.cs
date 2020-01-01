@@ -15,9 +15,9 @@ namespace Opulence
             {
                 StandardOptions.ProjectFile,
             };
-            command.Handler = CommandHandler.Create<IConsole, string>(async (console, projectFile) =>
+            command.Handler = CommandHandler.Create<IConsole, string>((console, projectFile) =>
             {
-                await ExecuteAsync(console, projectFile);
+                return ExecuteAsync(console, projectFile);
             });
 
             return command;

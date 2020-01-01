@@ -13,6 +13,7 @@ namespace Opulence
         {
             var command = new RootCommand();
             command.AddCommand(DeployCommand.Create());
+            command.AddCommand(GenerateCommand.Create());
             command.AddCommand(PackageCommand.Create());
 
             command.Description = "white-glove service for .NET and kubernetes";

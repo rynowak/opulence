@@ -36,15 +36,49 @@ namespace Opulence
             using var writer = new StreamWriter(stream, encoding: Encoding.UTF8, leaveOpen: true);
             
             output.WriteDebugLine($"writing dockerfile to '{filePath}'");
+            if (container.UseMultiphaseDockerfile ?? true)
+            {
+                await WriteMultiphaseDockerfileAsync(writer, application, container);
+            }
+            else
+            {
+                await WriteLocalPublishDockerfileAsync(writer, application, container);
+            }
+            output.WriteDebugLine("done writing dockerfile");
+        }
+
+        private static async Task WriteMultiphaseDockerfileAsync(StreamWriter writer, Application application, ContainerStep container)
+        {
+            await writer.WriteLineAsync($"FROM {container.BuildImageName}:{container.BuildImageTag} as SDK");
+            await writer.WriteLineAsync($"WORKDIR /src");
+            await writer.WriteLineAsync($"COPY . .");
+            await writer.WriteLineAsync($"RUN dotnet publish -c Release -o /out");
+            await writer.WriteLineAsync($"FROM {container.BaseImageName}:{container.BaseImageTag} as RUNTIME");
+            await writer.WriteLineAsync($"WORKDIR /app");
+            await writer.WriteLineAsync($"COPY --from=SDK /out .");
+            await writer.WriteLineAsync($"ENTRYPOINT [\"dotnet\", \"{application.Name}.dll\"]");
+        }
+
+        private static async Task WriteLocalPublishDockerfileAsync(StreamWriter writer, Application application, ContainerStep container)
+        {
             await writer.WriteLineAsync($"FROM {container.BaseImageName}:{container.BaseImageTag}");
             await writer.WriteLineAsync($"WORKDIR /app");
             await writer.WriteLineAsync($"COPY . /app");
             await writer.WriteLineAsync($"ENTRYPOINT [\"dotnet\", \"{application.Name}.dll\"]");
-            output.WriteDebugLine("done writing dockerfile");
         }
 
-        private static void ApplyContainerDefaults(Application application, ContainerStep container)
+        public static void ApplyContainerDefaults(Application application, ContainerStep container)
         {
+            if (application is null)
+            {
+                throw new ArgumentNullException(nameof(application));
+            }
+
+            if (container is null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
             if (container.BaseImageName == null && 
                 application.Frameworks.Any(f => f.Name == "Microsoft.AspNetCore.App"))
             {
@@ -71,6 +105,8 @@ namespace Opulence
                 throw new CommandException($"Unsupported TFM {application.TargetFramework}.");
             }
 
+            container.BuildImageName ??= "mcr.microsoft.com/dotnet/core/sdk";
+            container.BuildImageTag ??= "3.1";
             container.ImageName ??= application.Name.ToLowerInvariant();
             container.ImageTag ??= application.Version.Replace("+", "-");
         }

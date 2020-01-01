@@ -1,11 +1,52 @@
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
 
 namespace Opulence
 {
     internal static class StandardOptions
     {
+        private static readonly string[] AllOutputs = new string[] { "container", "chart", };
+
+        public static Option Outputs
+        {
+            get
+            {
+                var argument = new Argument<List<string>>(TryConvert)
+                {
+                    Arity = ArgumentArity.ZeroOrMore,
+                };
+                argument.AddSuggestions(AllOutputs);
+                argument.SetDefaultValue(new List<string>(AllOutputs));
+
+                return new Option(new[]{ "-o", "--outputs" }, "outputs to generate")
+                {
+                    Argument = argument,
+                };
+
+                static bool TryConvert(SymbolResult symbol, out List<string> outputs)
+                {
+                    outputs = new List<string>();
+
+                    foreach (var token in symbol.Tokens)
+                    {
+                        if (!AllOutputs.Any(item => string.Equals(item, token.Value, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            symbol.ErrorMessage = $"output '{token.Value}' is not recognized";
+                            outputs = default!;
+                            return false;
+                        }
+
+                        outputs.Add(token.Value.ToLowerInvariant());
+                    }
+
+                    return true;
+                }
+            }
+        }
+
         public static Option ProjectFile
         {
             get

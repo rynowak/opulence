@@ -1,5 +1,6 @@
 using System;
 using System.CommandLine.Invocation;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Opulence
@@ -23,15 +24,27 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(container));
             }
 
-            using var tempFile = TempFile.Create();
+            DockerfileGenerator.ApplyContainerDefaults(application, container);
 
-            await DockerfileGenerator.WriteDockerfileAsync(output, application, container, tempFile.FilePath);
+            using var tempFile = TempFile.Create();
+            
+            var dockerFilePath = Path.Combine(application.ProjectDirectory, "Dockerfile");
+            if (File.Exists(dockerFilePath))
+            {
+                output.WriteDebugLine("using existing dockerfile");
+            }
+            else
+            {
+                await DockerfileGenerator.WriteDockerfileAsync(output, application, container, tempFile.FilePath);
+                dockerFilePath = tempFile.FilePath;
+            }
 
             output.WriteDebugLine("running docker build");
+            output.WriteDebug($"> docker build . -t {container.ImageName}:{container.ImageTag} -f \"{dockerFilePath}\"");
             var capture = output.Capture();
             var exitCode = await Process.ExecuteAsync(
                 $"docker",
-                $"build . -t {container.ImageName}:{container.ImageTag} -f \"{tempFile.FilePath}\"",
+                $"build . -t {container.ImageName}:{container.ImageTag} -f \"{dockerFilePath}\"",
                 application.ProjectDirectory,
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
