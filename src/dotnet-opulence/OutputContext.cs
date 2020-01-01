@@ -36,6 +36,16 @@ namespace Opulence
             }
         }
 
+        public void WriteAlways(string message)
+        {
+            Write(Verbosity.Info, message);
+        }
+
+        public void WriteAlwaysLine(string message)
+        {
+            WriteLine(Verbosity.Info, message);
+        }
+
         public void WriteInfo(string message)
         {
             Write(Verbosity.Info, message);
