@@ -22,7 +22,9 @@ jobs:
       run: dotnet test opulence.sln -c Release --no-build
 
     - name: dotnet pack
-      run: dotnet pack opulence.sln -c Release --no-build
+      run: |
+        mkdir ./artifacts
+        dotnet pack opulence.sln -c Release --no-build -o ./artifacts
 
     - name: setup nuget
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -36,4 +38,15 @@ jobs:
 
     - name: push packages
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push **/*.nupkg -s https://nuget.pkg.github.com/rynowak/index.json --skip-duplicate
+      run: |
+          for f in ./artifacts/*.nupkg
+          do
+            curl --silent --show-error --fail -vX PUT -u "rynowak:${{ secrets.GITHUB_TOKEN }}" -F package=@$f https://nuget.pkg.github.com/rynowak/
+            if [ $? -eq 0 ]
+            then
+              echo "successfully pushed $f"
+            else
+              echo "failed to push $f" >&2
+              exit 1
+            fi
+          done
