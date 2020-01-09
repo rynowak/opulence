@@ -35,7 +35,7 @@ namespace Opulence
             using var stream = File.OpenWrite(filePath);
             using var writer = new StreamWriter(stream, encoding: Encoding.UTF8, leaveOpen: true);
             
-            output.WriteDebugLine($"writing dockerfile to '{filePath}'");
+            output.WriteDebugLine($"Writing dockerfile to '{filePath}'.");
             if (container.UseMultiphaseDockerfile ?? true)
             {
                 await WriteMultiphaseDockerfileAsync(writer, application, container);
@@ -44,7 +44,7 @@ namespace Opulence
             {
                 await WriteLocalPublishDockerfileAsync(writer, application, container);
             }
-            output.WriteDebugLine("done writing dockerfile");
+            output.WriteDebugLine("Done writing dockerfile.");
         }
 
         private static async Task WriteMultiphaseDockerfileAsync(StreamWriter writer, Application application, ContainerStep container)

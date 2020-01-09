@@ -28,13 +28,13 @@ namespace Opulence
             // but it's not documented that it works yet for azure.
             if (!registryHostname.EndsWith(".azurecr.io"))
             {
-                throw new CommandException("currently pushing of helm charts is limited to '*.azurecr.io'");
+                throw new CommandException("Currently pushing of helm charts is limited to '*.azurecr.io'.");
             }
 
             var registryName = registryHostname.Substring(0, registryHostname.Length - ".azurecr.io".Length);
 
-            output.WriteDebugLine("running az acr helm push");
-            output.WriteDebugLine($"> az acr helm push --name {registryName} \"{chartFilePath}\"");
+            output.WriteDebugLine("Running 'az acr helm push'.");
+            output.WriteCommandLine("az", $"acr helm push --name {registryName} \"{chartFilePath}\"");
             var capture = output.Capture();
             var exitCode = await Process.ExecuteAsync(
                 $"az",
@@ -42,10 +42,10 @@ namespace Opulence
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
 
-            output.WriteDebugLine($"done running az acr helm push exit code: {exitCode}");
+            output.WriteDebugLine($"Done running 'az acr helm push' exit code: {exitCode}");
             if (exitCode != 0)
             {
-                throw new CommandException("az acr helm push failed");
+                throw new CommandException("'az acr helm push' failed.");
             }
         }
     }

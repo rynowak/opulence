@@ -17,7 +17,7 @@ namespace Opulence
             command.AddCommand(PackageCommand.Create());
             command.AddCommand(PushCommand.Create());
 
-            command.Description = "white-glove service for .NET and kubernetes";
+            command.Description = "White-Glove Service for .NET and Kubernetes";
             command.Handler = CommandHandler.Create<IHelpBuilder>(help =>
             {
                 help.Write(command);
@@ -51,16 +51,16 @@ namespace Opulence
 
             if (exception is OperationCanceledException)
             {
-                context.Console.Error.WriteLine("operation canceled.");
+                context.Console.Error.WriteLine("Oh dear! Operation canceled.");
             }
             else if (exception is CommandException command)
             {
-                context.Console.Error.WriteLine($"{context.ParseResult.CommandResult.Name} failed:");
+                context.Console.Error.WriteLine($"Drats! '{context.ParseResult.CommandResult.Name}' failed:");
                 context.Console.Error.WriteLine($"\t{command.Message}");
             }
             else
             {
-                context.Console.Error.WriteLine("unhandled exception: ");
+                context.Console.Error.WriteLine("An unhandled exception has occurred, how unseemly: ");
                 context.Console.Error.WriteLine(exception.ToString());
             }
 

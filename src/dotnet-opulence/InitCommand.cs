@@ -13,10 +13,10 @@ namespace Opulence
     {
         public static Command Create()
         {
-            var command = new Command("init", "initialize repo")
+            var command = new Command("init", "Initialize repo")
             {
                 StandardOptions.Verbosity,
-                new Option(new[] { "-d", "--directory", }, "directory to initialize")
+                new Option(new[] { "-d", "--directory", }, "Directory to Initialize")
                 {
                     Argument = new Argument<DirectoryInfo>(() =>
                     {
@@ -36,28 +36,72 @@ namespace Opulence
 
         private static async Task ExecuteAsync(OutputContext output, DirectoryInfo directory)
         {
-            var opulenceFilePath = DirectorySearch.AscendingSearch(directory.FullName, "opulence.json");
-            if (opulenceFilePath != null)
+            string? opulenceFilePath = null;
+
+            using (var step = output.BeginStep("Looking For Existing Config..."))
             {
-                output.WriteInfoLine($"found 'opulence.json' at '{Path.GetDirectoryName(opulenceFilePath)}'");
-                return;
+                opulenceFilePath = DirectorySearch.AscendingSearch(directory.FullName, "opulence.json");
+                if (opulenceFilePath != null)
+                {
+                    output.WriteInfoLine($"Found 'opulence.json' at '{opulenceFilePath}'");
+                    step.MarkComplete();
+                    return;
+                }
+                else
+                {
+                    output.WriteInfoLine("Not Found");
+                    step.MarkComplete();
+                }
             }
 
-            output.WriteInfoLine("locating nearest sln file");
-            var solutionFilePath = DirectorySearch.AscendingWildcardSearch(directory.FullName, "*.sln").FirstOrDefault()?.FullName;
-            if (opulenceFilePath == null && solutionFilePath != null && Confirm(output, $"use '{Path.GetDirectoryName(solutionFilePath)}' as root?"))
+            using (var step = output.BeginStep("Looking For .sln File..."))
             {
-                opulenceFilePath = Path.Combine(Path.GetDirectoryName(solutionFilePath)!, "opulence.json");
+                var solutionFilePath = DirectorySearch.AscendingWildcardSearch(directory.FullName, "*.sln").FirstOrDefault()?.FullName;
+                if (opulenceFilePath == null && 
+                    solutionFilePath != null && 
+                    output.Confirm($"Use '{Path.GetDirectoryName(solutionFilePath)}' as Root?"))
+                {
+                    opulenceFilePath = Path.Combine(Path.GetDirectoryName(solutionFilePath)!, "opulence.json");
+                    step.MarkComplete();
+                }
+                else 
+                {
+                    output.WriteInfoLine("Not Found.");
+                    step.MarkComplete();
+                }
             }
 
-            if (opulenceFilePath == null && Confirm(output, "use project directory as root?"))
+            if (opulenceFilePath == null && 
+                Path.GetFullPath(directory.FullName) != Path.GetFullPath(Environment.CurrentDirectory))
             {
-                opulenceFilePath = Path.Combine(directory.FullName, "opulence.json");
+                // User specified a directory other than the current one
+                using (var step = output.BeginStep("Trying Project Directory..."))
+                {
+                    if (output.Confirm("Use Project Directory as Root?"))
+                    {
+                        opulenceFilePath = Path.Combine(directory.FullName, "opulence.json");
+                    }
+
+                    step.MarkComplete();
+                }
             }
 
             if (opulenceFilePath == null)
             {
-                throw new CommandException("cannot determine root directory");
+                using (var step = output.BeginStep("Trying Current Directory..."))
+                {
+                    if (output.Confirm("Use Current Directory as Root?"))
+                    {
+                        opulenceFilePath = Path.Combine(directory.FullName, "opulence.json");
+                    }
+
+                    step.MarkComplete();
+                }
+            }
+
+            if (opulenceFilePath == null)
+            {
+                throw new CommandException("Cannot Determine Root Directory.");
             }
 
             var config = new OpulenceConfig()
@@ -68,49 +112,18 @@ namespace Opulence
                 }
             };
 
-            while (true)
+            using (var step = output.BeginStep("Writing Config..."))
             {
-                output.WriteAlways("entry the container registry hostname (ex: example.azurecr.io): ");
-                var line = Console.ReadLine();
-                output.WriteAlwaysLine(string.Empty);
+                config.Container.Registry.Hostname = output.Prompt("Enter the Container Registry Hostname (ex: example.azurecr.io)");
 
-                if (!string.IsNullOrEmpty(line))
+                using var stream = File.OpenWrite(opulenceFilePath);
+                await JsonSerializer.SerializeAsync(stream, config, new JsonSerializerOptions()
                 {
-                    config.Container.Registry.Hostname = line.Trim();
-                    break;
-                }
-            }
+                    WriteIndented = true,
+                });
 
-            using var stream = File.OpenWrite(opulenceFilePath);
-            await JsonSerializer.SerializeAsync(stream, config, new JsonSerializerOptions()
-            {
-                WriteIndented = true,
-            });
-
-            output.WriteInfo($"initialized opulence config at '{opulenceFilePath}'");
-        }
-
-        private static bool Confirm(OutputContext output, string prompt)
-        {
-            while (true)
-            {
-                output.WriteAlways(prompt);
-                output.WriteAlways(" (y/n): ");
-
-                var key = Console.ReadKey();
-                output.WriteAlwaysLine(string.Empty);
-                if (key.KeyChar == 'y' || key.KeyChar == 'Y')
-                {
-                    return true;
-                }
-                else if (key.KeyChar == 'n' || key.KeyChar == 'N')
-                {
-                    return false;
-                }
-                else
-                {
-                    output.WriteAlwaysLine("invalid input");
-                }
+                output.WriteInfoLine($"Initialized Opulence Config at '{opulenceFilePath}'.");
+                step.MarkComplete();
             }
         }
     }

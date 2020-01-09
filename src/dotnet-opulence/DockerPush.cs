@@ -23,8 +23,8 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(imageTag));
             }
 
-            output.WriteDebugLine("running docker push");
-            output.WriteDebugLine($"> docker push {imageName}:{imageTag}");
+            output.WriteDebugLine("Running 'docker push'.");
+            output.WriteCommandLine("docker", $"push {imageName}:{imageTag}");
             var capture = output.Capture();
             var exitCode = await Process.ExecuteAsync(
                 $"docker",
@@ -32,10 +32,10 @@ namespace Opulence
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
 
-            output.WriteDebugLine($"done running docker push exit code: {exitCode}");
+            output.WriteDebugLine($"Done running 'docker push' exit code: {exitCode}");
             if (exitCode != 0)
             {
-                throw new CommandException("docker push failed");
+                throw new CommandException("'docker push' failed.");
             }
         }
     }

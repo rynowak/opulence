@@ -10,13 +10,13 @@ namespace Opulence
     {
         public static Command Create()
         {
-            var command = new Command("generate", "generate assets")
+            var command = new Command("generate", "Generate assets")
             {
                 StandardOptions.Project,
                 StandardOptions.Verbosity,
                 StandardOptions.Outputs,
 
-                new Option("--force", "force overwrite of existing files")
+                new Option("--force", "Force overwrite of existing files")
                 {
                     Argument = new Argument<bool>(),
                 },
@@ -33,22 +33,7 @@ namespace Opulence
 
         private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile, List<string> outputs, bool force)
         {
-            var config = await OpulenceConfigFactory.ReadConfigAsync(output, projectFile.DirectoryName);
-            if (config == null)
-            {
-                // Allow operating without config for now.
-                output.WriteInfoLine("config was not found, using defaults");
-                config = new OpulenceConfig()
-                {
-                    Container = new ContainerConfig()
-                    {
-                        Registry = new RegistryConfig(),
-                    }
-                };
-            }
-
-            var application = ApplicationFactory.CreateDefault(config, projectFile);
-            await ProjectReader.InitializeAsync(output, application);
+            var application = await ProjectReader.ReadProjectDetailsAsync(output, projectFile);
             await ScriptRunner.RunProjectScriptAsync(output, application);
 
             for (var i = 0; i < application.Steps.Count; i++)
@@ -63,48 +48,56 @@ namespace Opulence
                         // the helm step.
                         DockerfileGenerator.ApplyContainerDefaults(application, container);
 
-                        output.WriteDebugLine("skipping container");
+                        output.WriteDebugLine("Skipping container.");
                         continue;
                     }
 
-                    output.WriteInfoLine("generating dockerfile");
-
-                    var dockerFilePath = Path.Combine(application.ProjectDirectory, "Dockerfile");
-                    if (File.Exists(dockerFilePath) && !force)
+                    using (var stepTracker = output.BeginStep("Generating Dockerfile..."))
                     {
-                        throw new CommandException("'Dockerfile' already exists for project. use --force to overwrite");
+                        var dockerFilePath = Path.Combine(application.ProjectDirectory, "Dockerfile");
+                        if (File.Exists(dockerFilePath) && !force)
+                        {
+                            throw new CommandException("'Dockerfile' already exists for project. use '--force' to overwrite.");
+                        }
+
+                        // force multi-phase dockerfile - this makes much more sense in the workflow
+                        // where you're going to maintain the dockerfile yourself.
+                        container.UseMultiphaseDockerfile = true;
+
+                        File.Delete(dockerFilePath);
+
+                        await DockerfileGenerator.WriteDockerfileAsync(output, application, container, dockerFilePath);
+                        output.WriteInfoLine($"Generated Dockerfile at '{dockerFilePath}'.");
+
+                        stepTracker.MarkComplete();
                     }
-
-                    // force multi-phase dockerfile - this makes much more sense in the workflow
-                    // where you're going to maintain the dockerfile yourself.
-                    container.UseMultiphaseDockerfile = true;
-
-                    File.Delete(dockerFilePath);
-
-                    await DockerfileGenerator.WriteDockerfileAsync(output, application, container, dockerFilePath);
                 }
                 else if (step is HelmChartStep chart)
                 {
                     if (!outputs.Contains("chart"))
                     {
-                        output.WriteDebugLine("skipping helm chart");
+                        output.WriteDebugLine("Skipping helm chart.");
                         continue;
                     }
 
-                    output.WriteInfoLine("generating helm charts");
-
-                    var chartDirectory = Path.Combine(application.ProjectDirectory, "charts");
-                    if (Directory.Exists(chartDirectory) && !force)
+                    using (var stepTracker = output.BeginStep("Generating Helm Chart..."))
                     {
-                        throw new CommandException("'charts' directory already exists for project. use --force to overwrite");
-                    }
+                        var chartDirectory = Path.Combine(application.ProjectDirectory, "charts");
+                        if (Directory.Exists(chartDirectory) && !force)
+                        {
+                            throw new CommandException("'charts' directory already exists for project. use '--force' to overwrite.");
+                        }
 
-                    await HelmChartGenerator.GenerateAsync(
-                        output, 
-                        application, 
-                        application.Steps.Get<ContainerStep>()!, 
-                        chart,
-                        new DirectoryInfo(chartDirectory));
+                        await HelmChartGenerator.GenerateAsync(
+                            output,
+                            application,
+                            application.Steps.Get<ContainerStep>()!,
+                            chart,
+                            new DirectoryInfo(chartDirectory));
+                        output.WriteInfoLine($"Generated Helm Chart at '{Path.Combine(chartDirectory, chart.ChartName)}'.");
+
+                        stepTracker.MarkComplete();
+                    }
                 }
             }
         }

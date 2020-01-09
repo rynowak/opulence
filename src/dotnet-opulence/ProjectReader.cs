@@ -8,15 +8,39 @@ namespace Opulence
 {
     internal static class ProjectReader
     {
-        public static async Task InitializeAsync(OutputContext output, Application application)
+        public static async Task<Application> ReadProjectDetailsAsync(OutputContext output, FileInfo projectFile)
         {
-            output.WriteInfoLine("reading project information");
+            using (var step = output.BeginStep("Reading Project Details..."))
+            {
+                var config = await OpulenceConfigFactory.ReadConfigAsync(output, projectFile.DirectoryName);
+                if (config == null)
+                {
+                    // Allow operating without config for now.
+                    output.WriteInfoLine("Config was not found, using defaults.");
+                    config = new OpulenceConfig()
+                    {
+                        Container = new ContainerConfig()
+                        {
+                            Registry = new RegistryConfig(),
+                        }
+                    };
+                }
 
+                var application = ApplicationFactory.CreateDefault(config, projectFile);
+                await ProjectReader.EvaluateMSBuildAsync(output, application);
+                step.MarkComplete();
+
+                return application;
+            }
+        }
+        
+        private static async Task EvaluateMSBuildAsync(OutputContext output, Application application)
+        {
             try
             {
-                output.WriteDebugLine("installing msbuild targets");
+                output.WriteDebugLine("Installing msbuild targets.");
                 TargetInstaller.Install(application.ProjectFilePath);
-                output.WriteDebugLine("installed msbuild targets");
+                output.WriteDebugLine("Installed msbuild targets.");
             }
             catch (Exception ex)
             {
@@ -27,10 +51,11 @@ namespace Opulence
 
             try
             {
-                output.WriteDebugLine("executing dotnet msbuild");
-
                 var capture = output.Capture();
                 var opulenceRoot = Path.GetDirectoryName(typeof(Program).Assembly.Location);
+
+                output.WriteDebugLine("Running 'dotnet msbuild'.");
+                output.WriteCommandLine("dotnet", $"msbuild /t:EvaluateOpulenceProjectInfo \"/p:OpulenceTargetLocation={opulenceRoot}\" \"/p:OpulenceOutputFilePath={outputFilePath}\"");
                 var exitCode = await Process.ExecuteAsync(
                     $"dotnet", 
                     $"msbuild /t:EvaluateOpulenceProjectInfo \"/p:OpulenceTargetLocation={opulenceRoot}\" \"/p:OpulenceOutputFilePath={outputFilePath}\"",
@@ -38,10 +63,10 @@ namespace Opulence
                     stdOut: capture.StdOut,
                     stdErr: capture.StdErr);
                 
-                output.WriteDebugLine($"executed dotnet msbuild exit code: {exitCode}");
+                output.WriteDebugLine($"Done running 'dotnet msbuild' exit code: {exitCode}");
                 if (exitCode != 0)
                 {
-                    throw new CommandException("Getting project info failed.");
+                    throw new CommandException("'dotnet msbuild' failed.");
                 }
 
                 var lines = await File.ReadAllLinesAsync(outputFilePath);
@@ -51,14 +76,14 @@ namespace Opulence
                     if (line.StartsWith("version="))
                     {
                         application.Version = line.Substring("version=".Length).Trim();
-                        output.WriteDebugLine($"found application version: {line}");
+                        output.WriteDebugLine($"Found application version: {line}");
                         continue;
                     }
 
                     if (line.StartsWith("tfm"))
                     {
                         application.TargetFramework = line.Substring("tfm=".Length).Trim();
-                        output.WriteDebugLine($"found target framework: {line}");
+                        output.WriteDebugLine($"Found target framework: {line}");
                         continue;
                     }
 
@@ -66,7 +91,7 @@ namespace Opulence
                     {
                         var right = line.Substring("frameworks=".Length).Trim();
                         application.Frameworks.AddRange(right.Split(",").Select(s => new Framework(s)));
-                        output.WriteDebugLine($"found shared frameworks: {line}");
+                        output.WriteDebugLine($"Found shared frameworks: {line}");
                         continue;
                     }
                 }
@@ -75,8 +100,6 @@ namespace Opulence
             {
                 File.Delete(outputFilePath);
             }
-
-            output.WriteDebugLine("done reading project information");
         }
     }
 }

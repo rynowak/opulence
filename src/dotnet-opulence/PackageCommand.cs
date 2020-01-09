@@ -9,7 +9,7 @@ namespace Opulence
     {
         public static Command Create()
         {
-            var command = new Command("package", "package the application")
+            var command = new Command("package", "Package the project")
             {
                 StandardOptions.Project,
                 StandardOptions.Verbosity,
@@ -25,36 +25,25 @@ namespace Opulence
 
         private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile)
         {
-            var config = await OpulenceConfigFactory.ReadConfigAsync(output, projectFile.DirectoryName);
-            if (config == null)
-            {
-                // Allow operating without config for now.
-                output.WriteInfoLine("config was not found, using defaults");
-                config = new OpulenceConfig()
-                {
-                    Container = new ContainerConfig()
-                    {
-                        Registry = new RegistryConfig(),
-                    }
-                };
-            }
+            var application = await ProjectReader.ReadProjectDetailsAsync(output, projectFile);
 
-            var application = ApplicationFactory.CreateDefault(config, projectFile);
-            await ProjectReader.InitializeAsync(output, application);
             await ScriptRunner.RunProjectScriptAsync(output, application);
 
             for (var i = 0; i < application.Steps.Count; i++)
             {
                 var step = application.Steps[i];
-                output.WriteInfoLine($"executing step: {step.DisplayName}");
+                using (var stepTracker = output.BeginStep(step.DisplayName))
+                {
+                    if (step is ContainerStep container)
+                    {
+                        await DockerContainerBuilder.BuildContainerImageAsync(output, application, container);
+                    }
+                    else if (step is HelmChartStep chart)
+                    {
+                        await HelmChartBuilder.BuildHelmChartAsync(output, application, application.Steps.Get<ContainerStep>()!, chart);
+                    }
 
-                if (step is ContainerStep container)
-                {
-                    await DockerContainerBuilder.BuildContainerImageAsync(output, application, container);
-                }
-                else if (step is HelmChartStep chart)
-                {
-                    await HelmChartBuilder.BuildHelmChartAsync(output, application, application.Steps.Get<ContainerStep>()!, chart);
+                    stepTracker.MarkComplete();
                 }
             }
         }

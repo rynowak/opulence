@@ -2,7 +2,7 @@
 {
     public sealed class ContainerStep : Step
     {
-        public override string DisplayName => "container";
+        public override string DisplayName => "Building Docker Container...";
 
         /// <summary>
         /// Gets or sets the name of the base image. If null, the base image will be chosen

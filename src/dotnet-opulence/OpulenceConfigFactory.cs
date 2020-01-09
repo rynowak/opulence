@@ -19,16 +19,16 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(directoryPath));
             }
 
-            output.WriteDebugLine($"searching for opulence.json above '{directoryPath}'");
+            output.WriteDebugLine($"Searching for opulence.json above '{directoryPath}'.");
 
             var configFilePath = DirectorySearch.AscendingSearch(directoryPath, "opulence.json");
             if (configFilePath == null)
             {
-                output.WriteDebugLine("no configuration found");
+                output.WriteDebugLine("No configuration found.");
                 return null;
             }
 
-            output.WriteDebugLine($"configuration found at '{configFilePath}'");
+            output.WriteDebugLine($"Configuration found at '{configFilePath}'.");
 
             using var stream = File.OpenRead(configFilePath);
             return await JsonSerializer.DeserializeAsync<OpulenceConfig>(stream);

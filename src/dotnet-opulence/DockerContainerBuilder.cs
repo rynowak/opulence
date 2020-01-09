@@ -31,7 +31,7 @@ namespace Opulence
             var dockerFilePath = Path.Combine(application.ProjectDirectory, "Dockerfile");
             if (File.Exists(dockerFilePath))
             {
-                output.WriteDebugLine("using existing dockerfile");
+                output.WriteDebugLine($"Using existing dockerfile '{dockerFilePath}'.");
             }
             else
             {
@@ -39,8 +39,8 @@ namespace Opulence
                 dockerFilePath = tempFile.FilePath;
             }
 
-            output.WriteDebugLine("running docker build");
-            output.WriteDebug($"> docker build . -t {container.ImageName}:{container.ImageTag} -f \"{dockerFilePath}\"");
+            output.WriteDebugLine("Running 'docker build'.");
+            output.WriteCommandLine("docker", $"build . -t {container.ImageName}:{container.ImageTag} -f \"{dockerFilePath}\"");
             var capture = output.Capture();
             var exitCode = await Process.ExecuteAsync(
                 $"docker",
@@ -49,11 +49,13 @@ namespace Opulence
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
 
-            output.WriteDebugLine($"done running docker build exit code:{exitCode}");
+            output.WriteDebugLine($"Done running 'docker build' exit code: {exitCode}");
             if (exitCode != 0)
             {
-                throw new CommandException("Docker build failed.");
+                throw new CommandException("'docker build' failed.");
             }
+
+            output.WriteInfoLine($"Created Docker Image: {container.ImageName}:{container.ImageTag}");
         }
     }
 }

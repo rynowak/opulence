@@ -33,8 +33,6 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(outputDirectory));
             }
 
-            output.WriteDebugLine("generating helm chart");
-
             ApplyHelmChartDefaults(application, container, chart);
 
             // The directory with the charts needs to be the same as the chart name
@@ -73,8 +71,6 @@ namespace Opulence
                 $"image:",
                 $"  repository: {container.ImageName}",
             });
-
-            output.WriteDebugLine("done generating helm chart");
         }
 
         public static void ApplyHelmChartDefaults(Application application, ContainerStep container, HelmChartStep chart)
