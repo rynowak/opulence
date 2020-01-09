@@ -12,7 +12,6 @@ namespace Opulence
         static async Task<int> Main(string[] args)
         {
             var command = new RootCommand();
-            command.AddCommand(DeployCommand.Create());
             command.AddCommand(InitCommand.Create());
             command.AddCommand(GenerateCommand.Create());
             command.AddCommand(PackageCommand.Create());
