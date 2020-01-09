@@ -37,7 +37,7 @@ namespace Opulence
                 throw new InvalidOperationException($"Already executing step: {currentStep.Title}");
             }
 
-            WriteInfoLine(title);
+            WriteInfoLine("💰 " + title);
 
             indent += IndentAmount;
             currentStep = new StepTracker(this, title);
