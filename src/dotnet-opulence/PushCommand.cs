@@ -25,6 +25,8 @@ namespace Opulence
 
         private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile)
         {
+            output.WriteBanner();
+
             var application = await ProjectReader.ReadProjectDetailsAsync(output, projectFile);
             if (application.Config?.Container?.Registry?.Hostname == null)
             {

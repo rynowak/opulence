@@ -149,6 +149,31 @@ namespace Opulence
             }
         }
 
+//
+
+
+        public void WriteBanner()
+        {
+            // From: http://patorjk.com/software/taag/#p=display&f=Big%20Money-nw&t=Opulence
+            WriteInfoLine(string.Empty);
+            WriteInfoLine(@" $$$$$$\                      $$\                                         ");
+            WriteInfoLine(@"$$  __$$\                     $$ |                                        ");
+            WriteInfoLine(@"$$ /  $$ | $$$$$$\  $$\   $$\ $$ | $$$$$$\  $$$$$$$\   $$$$$$$\  $$$$$$\  ");
+            WriteInfoLine(@"$$ |  $$ |$$  __$$\ $$ |  $$ |$$ |$$  __$$\ $$  __$$\ $$  _____|$$  __$$\ ");
+            WriteInfoLine(@"$$ |  $$ |$$ /  $$ |$$ |  $$ |$$ |$$$$$$$$ |$$ |  $$ |$$ /      $$$$$$$$ |");
+            WriteInfoLine(@"$$ |  $$ |$$ |  $$ |$$ |  $$ |$$ |$$   ____|$$ |  $$ |$$ |      $$   ____|");
+            WriteInfoLine(@" $$$$$$  |$$$$$$$  |\$$$$$$  |$$ |\$$$$$$$\ $$ |  $$ |\$$$$$$$\ \$$$$$$$\ ");
+            WriteInfoLine(@" \______/ $$  ____/  \______/ \__| \_______|\__|  \__| \_______| \_______|");
+            WriteInfoLine(@"          $$ |                                                            ");
+            WriteInfoLine(@"          $$ |                                                            ");
+            WriteInfoLine(@"          \__|                                                            ");
+            WriteInfoLine(@"--------------------------------------------------------------------------");
+            WriteInfoLine(string.Empty);
+            WriteInfoLine("White-Glove service for .NET and Kubernetes...");
+            WriteInfoLine("Someone will be right with you!");
+            WriteInfoLine(string.Empty);
+        }
+
         public CapturedCommandOutput Capture()
         {
             return new CapturedCommandOutput(this);
