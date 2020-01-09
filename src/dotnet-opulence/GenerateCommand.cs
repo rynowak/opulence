@@ -33,6 +33,8 @@ namespace Opulence
 
         private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile, List<string> outputs, bool force)
         {
+            output.WriteBanner();
+            
             var application = await ProjectReader.ReadProjectDetailsAsync(output, projectFile);
             await ScriptRunner.RunProjectScriptAsync(output, application);
 

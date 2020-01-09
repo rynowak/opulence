@@ -36,6 +36,8 @@ namespace Opulence
 
         private static async Task ExecuteAsync(OutputContext output, DirectoryInfo directory)
         {
+            output.WriteBanner();
+
             string? opulenceFilePath = null;
 
             using (var step = output.BeginStep("Looking For Existing Config..."))
