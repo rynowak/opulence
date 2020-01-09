@@ -21,7 +21,7 @@ namespace Opulence
                 argument.AddSuggestions(AllOutputs);
                 argument.SetDefaultValue(new List<string>(AllOutputs));
 
-                return new Option(new[]{ "-o", "--outputs" }, "outputs to generate")
+                return new Option(new[]{ "-o", "--outputs" }, "Outputs to generate")
                 {
                     Argument = argument,
                 };
@@ -89,7 +89,7 @@ namespace Opulence
                     }
                 });
 
-                return new Option(new [] { "-p", "--project" }, "application project file")
+                return new Option(new [] { "-p", "--project" }, "Project file")
                 {
                     Argument = argument,
                 };
@@ -160,7 +160,7 @@ namespace Opulence
         {
             get
             {
-                return new Option(new [] { "-v", "--verbosity" }, "output verbostiy")
+                return new Option(new [] { "-v", "--verbosity" }, "Output verbostiy")
                 {
                     Argument = new Argument<Verbosity>("one of: quiet|info|debug", Opulence.Verbosity.Info)
                     {

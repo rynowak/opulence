@@ -29,8 +29,6 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(chart));
             }
 
-            output.WriteInfoLine("building helm chart");
-
             var outputDirectoryPath = Path.Combine(application.ProjectDirectory, "bin");
             using var tempDirectory = TempDirectory.Create();
             
@@ -38,20 +36,22 @@ namespace Opulence
 
             var chartRoot = Path.Combine(application.ProjectDirectory, "charts");
             var chartPath = Path.Combine(chartRoot, chart.ChartName);
+
+            output.WriteDebugLine($"Looking for existing chart in '{chartPath}'.");
             if (Directory.Exists(chartPath))
             {
-                output.WriteDebugLine($"found existing chart in '{chartPath}'");
+                output.WriteDebugLine($"Found existing chart in '{chartPath}'.");
             }
             else
             {
                 chartRoot = tempDirectory.DirectoryPath;
                 chartPath = Path.Combine(chartRoot, chart.ChartName);
-                output.WriteDebugLine($"generating chart in '{chartPath}");
+                output.WriteDebugLine($"Generating chart in '{chartPath}'.");
                 await HelmChartGenerator.GenerateAsync(output, application, container, chart, new DirectoryInfo(tempDirectory.DirectoryPath));
             }
 
-            output.WriteDebugLine("running helm package");
-            output.WriteDebugLine($"> helm package -d \"{outputDirectoryPath}\" --version {application.Version.Replace('+', '-')} --app-version {application.Version.Replace('+', '-')}");
+            output.WriteDebugLine("Running 'helm package'.");
+            output.WriteCommandLine("helm", $"package -d \"{outputDirectoryPath}\" --version {application.Version.Replace('+', '-')} --app-version {application.Version.Replace('+', '-')}");
             var capture = output.Capture();
             var exitCode = await Process.ExecuteAsync(
                 "helm",
@@ -60,13 +60,13 @@ namespace Opulence
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
 
-            output.WriteDebugLine($"running helm package exit code: {exitCode}");
+            output.WriteDebugLine($"Running 'helm package' exit code: {exitCode}");
             if (exitCode != 0)
             {
-                throw new CommandException("helm package failed");
+                throw new CommandException("Running 'helm package' failed.");
             }
 
-            output.WriteDebugLine("done building helm chart");
+            output.WriteInfoLine($"Created Helm Chart: {Path.Combine(outputDirectoryPath, chart.ChartName + "-" + application.Version.Replace('+', '-') + ".tgz")}");
         }
     }
 }
