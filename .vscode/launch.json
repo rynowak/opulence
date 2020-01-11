@@ -56,6 +56,19 @@
             "stopAtEntry": false
         },
         {
+            "name": ".NET Core Launch metric-sidecar",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/src/metric-sidecar/bin/Debug/netcoreapp3.1/metric-sidecar.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/metric-sidecar",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach",
