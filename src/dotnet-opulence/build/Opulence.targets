@@ -6,6 +6,7 @@
       ResolveReferences;
       ResolvePackageDependenciesDesignTime;
       PrepareResources;
+      GetAssemblyAttributes;
     </EvaluateOpulenceProjectInfoDependsOn>
   </PropertyGroup>
 
@@ -16,7 +17,7 @@
       <_Frameworks>@(FrameworkReference, ',')</_Frameworks>
     </PropertyGroup>
     <ItemGroup>
-     <_Lines Include="version=$(AssemblyInformationalVersion)" />
+     <_Lines Include="version=$(InformationalVersion)" />
      <_Lines Include="tfm=$(TargetFramework)" />
      <_Lines Include="frameworks=$(_Frameworks)" />
     </ItemGroup>

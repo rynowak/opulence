@@ -3,6 +3,7 @@ using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Semver;
 
 namespace Opulence
 {
@@ -28,8 +29,15 @@ namespace Opulence
 
                 var application = ApplicationFactory.CreateDefault(config, projectFile);
                 await ProjectReader.EvaluateMSBuildAsync(output, application);
-                step.MarkComplete();
 
+                if (!SemVersion.TryParse(application.Version, out var version))
+                {
+                    output.WriteInfoLine($"No version or invalid version 'application.Version' found, using default.");
+                    version = new SemVersion(0, 1, 0);
+                    application.Version = version.ToString();
+                }
+
+                step.MarkComplete();
                 return application;
             }
         }
