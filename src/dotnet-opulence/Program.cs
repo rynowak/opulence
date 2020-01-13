@@ -57,6 +57,12 @@ namespace Opulence
             {
                 context.Console.Error.WriteLine($"Drats! '{context.ParseResult.CommandResult.Name}' failed:");
                 context.Console.Error.WriteLine($"\t{command.Message}");
+
+                if (command.InnerException != null)
+                {
+                    context.Console.Error.WriteLine();
+                    context.Console.Error.WriteLine(command.InnerException.ToString());
+                }
             }
             else
             {

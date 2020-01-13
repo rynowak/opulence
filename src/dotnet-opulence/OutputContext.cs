@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
 
 namespace Opulence
@@ -7,7 +8,7 @@ namespace Opulence
     {
         private const int IndentAmount = 4;
 
-        private StepTracker? currentStep;
+        private Stack<StepTracker> steps;
         private int indent;
 
         public OutputContext(IConsole console, Verbosity verbosity)
@@ -19,6 +20,8 @@ namespace Opulence
 
             Console = console;
             Verbosity = verbosity;
+
+            steps = new Stack<StepTracker>();
         }
 
         private IConsole Console { get; }
@@ -32,28 +35,24 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(title));
             }
 
-            if (currentStep != null)
-            {
-                throw new InvalidOperationException($"Already executing step: {currentStep.Title}");
-            }
-
             WriteInfoLine("💰 " + title);
 
             indent += IndentAmount;
-            currentStep = new StepTracker(this, title);
+            var currentStep = new StepTracker(this, title);
+            steps.Push(currentStep);
 
             return currentStep;
         }
 
         private void EndStep(StepTracker step)
         {
-            if (!object.ReferenceEquals(step, currentStep))
+            if (!object.ReferenceEquals(step, steps.Peek()))
             {
-                throw new InvalidOperationException($"Attempting to end a step that isn't running. Currently executing step: {currentStep?.Title}");
+                throw new InvalidOperationException($"Attempting to end a step that isn't running. Currently executing step: {steps.Peek()?.Title}");
             }
 
             indent -= IndentAmount;
-            currentStep = null;
+            steps.Pop();
 
             if (step.Message != null)
             {

@@ -6,7 +6,7 @@ namespace Opulence
 {
     internal static class HelmChartGenerator
     {
-        public static async Task GenerateAsync(OutputContext output, Application application, ContainerStep container, HelmChartStep chart, DirectoryInfo outputDirectory)
+        public static async Task GenerateAsync(OutputContext output, ApplicationEntry application, ServiceEntry service, Project project, ContainerStep container, HelmChartStep chart, DirectoryInfo outputDirectory)
         {
             if (output is null)
             {
@@ -16,6 +16,16 @@ namespace Opulence
             if (application is null)
             {
                 throw new ArgumentNullException(nameof(application));
+            }
+
+            if (service is null)
+            {
+                throw new ArgumentNullException(nameof(service));
+            }
+
+            if (project is null)
+            {
+                throw new ArgumentNullException(nameof(project));
             }
 
             if (container is null)
@@ -33,7 +43,7 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(outputDirectory));
             }
 
-            ApplyHelmChartDefaults(application, container, chart);
+            ApplyHelmChartDefaults(application, service, container, chart);
 
             // The directory with the charts needs to be the same as the chart name
             var chartDirectoryPath = Path.Combine(outputDirectory.FullName, chart.ChartName);
@@ -58,8 +68,8 @@ namespace Opulence
                 $"name: {chart.ChartName}",
                 $"# helm requires the version and appVersion to specified in Chart.yaml",
                 $"# opulence will override these values when packaging the chart",
-                $"version: {application.Version.Replace('+', '-')}",
-                $"appVersion: {application.Version.Replace('+', '-')}"
+                $"version: {project.Version.Replace('+', '-')}",
+                $"appVersion: {project.Version.Replace('+', '-')}"
             });
 
             // Write values.yaml
@@ -73,11 +83,16 @@ namespace Opulence
             });
         }
 
-        public static void ApplyHelmChartDefaults(Application application, ContainerStep container, HelmChartStep chart)
+        public static void ApplyHelmChartDefaults(ApplicationEntry application, ServiceEntry service, ContainerStep container, HelmChartStep chart)
         {
             if (application is null)
             {
                 throw new ArgumentNullException(nameof(application));
+            }
+
+            if (service is null)
+            {
+                throw new ArgumentNullException(nameof(service));
             }
 
             if (container is null)
@@ -90,7 +105,7 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(chart));
             }
 
-            chart.ChartName ??= application.Name.ToLowerInvariant();
+            chart.ChartName ??= service.Service.Name.ToLowerInvariant();
         }
     }
 }

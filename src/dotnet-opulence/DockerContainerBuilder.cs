@@ -7,7 +7,7 @@ namespace Opulence
 {
     internal static class DockerContainerBuilder
     {
-        public static async Task BuildContainerImageAsync(OutputContext output, Application application, ContainerStep container)
+        public static async Task BuildContainerImageAsync(OutputContext output, ApplicationEntry application, string solutionFilePath, ServiceEntry service, Project project, ContainerStep container)
         {
             if (output is null)
             {
@@ -19,23 +19,38 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(application));
             }
 
+            if (solutionFilePath is null)
+            {
+                throw new ArgumentNullException(nameof(solutionFilePath));
+            }
+
+            if (service is null)
+            {
+                throw new ArgumentNullException(nameof(service));
+            }
+
+            if (project is null)
+            {
+                throw new ArgumentNullException(nameof(project));
+            }
+
             if (container is null)
             {
                 throw new ArgumentNullException(nameof(container));
             }
 
-            DockerfileGenerator.ApplyContainerDefaults(application, container);
+            DockerfileGenerator.ApplyContainerDefaults(application, service, project, container);
 
             using var tempFile = TempFile.Create();
             
-            var dockerFilePath = Path.Combine(application.ProjectDirectory, "Dockerfile");
+            var dockerFilePath = Path.Combine(Path.GetDirectoryName(solutionFilePath)!, Path.GetDirectoryName(project.RelativeFilePath)!, "Dockerfile");
             if (File.Exists(dockerFilePath))
             {
                 output.WriteDebugLine($"Using existing dockerfile '{dockerFilePath}'.");
             }
             else
             {
-                await DockerfileGenerator.WriteDockerfileAsync(output, application, container, tempFile.FilePath);
+                await DockerfileGenerator.WriteDockerfileAsync(output, application, service, project, container, tempFile.FilePath);
                 dockerFilePath = tempFile.FilePath;
             }
 
@@ -45,7 +60,7 @@ namespace Opulence
             var exitCode = await Process.ExecuteAsync(
                 $"docker",
                 $"build . -t {container.ImageName}:{container.ImageTag} -f \"{dockerFilePath}\"",
-                application.ProjectDirectory,
+                Path.Combine(Path.GetDirectoryName(solutionFilePath)!, Path.GetDirectoryName(project.RelativeFilePath)!),
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
 
@@ -56,6 +71,7 @@ namespace Opulence
             }
 
             output.WriteInfoLine($"Created Docker Image: {container.ImageName}:{container.ImageTag}");
+            service.Outputs.Add(new DockerImageOutput(container.ImageName!, container.ImageTag!));
         }
     }
 }

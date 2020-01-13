@@ -58,7 +58,7 @@ namespace Opulence
                 var argument = new Argument<FileInfo>(TryConvert)
                 {
                     Arity = ArgumentArity.ZeroOrOne,
-                    Name = "project-file or directory",
+                    Name = "project-file or solution-file or directory",
                 };
 
                 argument.SetDefaultValue(() =>
@@ -89,7 +89,7 @@ namespace Opulence
                     }
                 });
 
-                return new Option(new [] { "-p", "--project" }, "Project file")
+                return new Option(new [] { "-p", "--project", }, "Project file, Solution file or directory")
                 {
                     Argument = argument,
                 };
@@ -99,7 +99,12 @@ namespace Opulence
                     var matches = new List<string>();
                     foreach (var candidate in Directory.EnumerateFiles(directoryPath))
                     {
-                        if (Path.GetExtension(candidate).EndsWith("proj"))
+                        if (Path.GetExtension(candidate).EndsWith(".sln"))
+                        {
+                            matches.Add(candidate);
+                        }
+
+                        if (Path.GetExtension(candidate).EndsWith(".csproj"))
                         {
                             matches.Add(candidate);
                         }
@@ -107,7 +112,7 @@ namespace Opulence
 
                     if (matches.Count == 0)
                     {
-                        errorMessage = $"no project file was found in directory '{directoryPath}'.";
+                        errorMessage = $"No project file or solution file was found in directory '{directoryPath}'.";
                         projectFilePath = default;
                         return false;
                     }
@@ -119,7 +124,7 @@ namespace Opulence
                     }
                     else
                     {
-                        errorMessage = $"more than one project file was found in directory '{directoryPath}'.";
+                        errorMessage = $"More than one project file or solution file was found in directory '{directoryPath}'.";
                         projectFilePath = default;
                         return false;
                     }
@@ -149,7 +154,7 @@ namespace Opulence
                         }
                     }
 
-                    symbol.ErrorMessage = $"the project file '{token}' could not be found.";
+                    symbol.ErrorMessage = $"The file '{token}' could not be found.";
                     file = default!;
                     return false;
                 }

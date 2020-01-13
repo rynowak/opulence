@@ -1,3 +1,5 @@
+using System;
+
 namespace Opulence
 {
     public sealed class Framework
@@ -6,7 +8,7 @@ namespace Opulence
         {
             if (name is null)
             {
-                throw new System.ArgumentNullException(nameof(name));
+                throw new ArgumentNullException(nameof(name));
             }
 
             Name = name;

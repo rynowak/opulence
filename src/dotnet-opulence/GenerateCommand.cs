@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
@@ -34,72 +35,85 @@ namespace Opulence
         private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile, List<string> outputs, bool force)
         {
             output.WriteBanner();
-            
-            var application = await ProjectReader.ReadProjectDetailsAsync(output, projectFile);
-            await ScriptRunner.RunProjectScriptAsync(output, application);
 
-            for (var i = 0; i < application.Steps.Count; i++)
+            ApplicationEntry application;
+            if (string.Equals(projectFile.Extension, ".sln", StringComparison.Ordinal))
             {
-                var step = application.Steps[i];
+                output.WriteInfoLine($"Solution '{projectFile.FullName}' was provided as input.");
+                application = await ApplicationFactory.CreateApplicationForSolutionAsync(output, projectFile);
+            }
+            else
+            {
+                output.WriteInfoLine($"Project '{projectFile.FullName}' was provided as input.");
+                application = await ApplicationFactory.CreateApplicationForProjectAsync(output, projectFile);
+            }
 
-                if (step is ContainerStep container)
+            foreach (var service in application.Services)
+            {
+                await GenerateService(output, application, projectFile.FullName, service, outputs, force);
+            }
+        }
+
+        private static async Task GenerateService(OutputContext output, ApplicationEntry application, string fullName, ServiceEntry service, List<string> outputs, bool force)
+        {
+            if (!service.HasProject)
+            {
+                output.WriteDebugLine($"Service '{service.FriendlyName}' does not have a project associated. Skipping.");
+                return;
+            }
+
+            var project = (Project)service.Service.Source!;
+            var projectDirectory = Path.GetDirectoryName(Path.Combine(application.RootDirectory, project.RelativeFilePath))!;
+
+            var container = new ContainerStep();
+
+            // force multi-phase dockerfile - this makes much more sense in the workflow
+            // where you're going to maintain the dockerfile yourself.
+            container.UseMultiphaseDockerfile = true;
+            DockerfileGenerator.ApplyContainerDefaults(application, service, project, container);
+
+            if (outputs.Count == 0 || outputs.Contains("container"))
+            {
+                using (var stepTracker = output.BeginStep("Generating Dockerfile..."))
                 {
-                    if (!outputs.Contains("container"))
+                    var dockerFilePath = Path.Combine(projectDirectory, "Dockerfile");
+                    if (File.Exists(dockerFilePath) && !force)
                     {
-                        // We should still apply the defaults here because they'll be used by
-                        // the helm step.
-                        DockerfileGenerator.ApplyContainerDefaults(application, container);
-
-                        output.WriteDebugLine("Skipping container.");
-                        continue;
+                        throw new CommandException("'Dockerfile' already exists for project. use '--force' to overwrite.");
                     }
 
-                    using (var stepTracker = output.BeginStep("Generating Dockerfile..."))
-                    {
-                        var dockerFilePath = Path.Combine(application.ProjectDirectory, "Dockerfile");
-                        if (File.Exists(dockerFilePath) && !force)
-                        {
-                            throw new CommandException("'Dockerfile' already exists for project. use '--force' to overwrite.");
-                        }
+                    File.Delete(dockerFilePath);
 
-                        // force multi-phase dockerfile - this makes much more sense in the workflow
-                        // where you're going to maintain the dockerfile yourself.
-                        container.UseMultiphaseDockerfile = true;
+                    await DockerfileGenerator.WriteDockerfileAsync(output, application, service, project, container, dockerFilePath);
+                    output.WriteInfoLine($"Generated Dockerfile at '{dockerFilePath}'.");
 
-                        File.Delete(dockerFilePath);
-
-                        await DockerfileGenerator.WriteDockerfileAsync(output, application, container, dockerFilePath);
-                        output.WriteInfoLine($"Generated Dockerfile at '{dockerFilePath}'.");
-
-                        stepTracker.MarkComplete();
-                    }
+                    stepTracker.MarkComplete();
                 }
-                else if (step is HelmChartStep chart)
+            }
+
+            if (outputs.Count == 0 || outputs.Contains("chart"))
+            {
+                using (var stepTracker = output.BeginStep("Generating Helm Chart..."))
                 {
-                    if (!outputs.Contains("chart"))
+                    var chartDirectory = Path.Combine(projectDirectory, "charts");
+                    if (Directory.Exists(chartDirectory) && !force)
                     {
-                        output.WriteDebugLine("Skipping helm chart.");
-                        continue;
+                        throw new CommandException("'charts' directory already exists for project. use '--force' to overwrite.");
                     }
 
-                    using (var stepTracker = output.BeginStep("Generating Helm Chart..."))
-                    {
-                        var chartDirectory = Path.Combine(application.ProjectDirectory, "charts");
-                        if (Directory.Exists(chartDirectory) && !force)
-                        {
-                            throw new CommandException("'charts' directory already exists for project. use '--force' to overwrite.");
-                        }
+                    var chart = new HelmChartStep();
 
-                        await HelmChartGenerator.GenerateAsync(
-                            output,
-                            application,
-                            application.Steps.Get<ContainerStep>()!,
-                            chart,
-                            new DirectoryInfo(chartDirectory));
-                        output.WriteInfoLine($"Generated Helm Chart at '{Path.Combine(chartDirectory, chart.ChartName)}'.");
+                    await HelmChartGenerator.GenerateAsync(
+                        output,
+                        application,
+                        service,
+                        project,
+                        container,
+                        chart,
+                        new DirectoryInfo(chartDirectory));
+                    output.WriteInfoLine($"Generated Helm Chart at '{Path.Combine(chartDirectory, chart.ChartName)}'.");
 
-                        stepTracker.MarkComplete();
-                    }
+                    stepTracker.MarkComplete();
                 }
             }
         }

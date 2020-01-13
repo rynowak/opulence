@@ -7,7 +7,7 @@ namespace Opulence
 {
     internal static class HelmChartBuilder
     {
-        public static async Task BuildHelmChartAsync(OutputContext output, Application application, ContainerStep container, HelmChartStep chart)
+        public static async Task BuildHelmChartAsync(OutputContext output, ApplicationEntry application, ServiceEntry service, Project project, ContainerStep container, HelmChartStep chart)
         {
             if (output is null)
             {
@@ -17,6 +17,16 @@ namespace Opulence
             if (application is null)
             {
                 throw new ArgumentNullException(nameof(application));
+            }
+
+            if (service is null)
+            {
+                throw new ArgumentNullException(nameof(service));
+            }
+
+            if (project is null)
+            {
+                throw new ArgumentNullException(nameof(project));
             }
 
             if (container is null)
@@ -29,12 +39,13 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(chart));
             }
 
-            var outputDirectoryPath = Path.Combine(application.ProjectDirectory, "bin");
+            var projectDirectory = Path.Combine(application.RootDirectory, Path.GetDirectoryName(project.RelativeFilePath)!);
+            var outputDirectoryPath = Path.Combine(projectDirectory, "bin");
             using var tempDirectory = TempDirectory.Create();
             
-            HelmChartGenerator.ApplyHelmChartDefaults(application, container, chart);
+            HelmChartGenerator.ApplyHelmChartDefaults(application, service, container, chart);
 
-            var chartRoot = Path.Combine(application.ProjectDirectory, "charts");
+            var chartRoot = Path.Combine(projectDirectory, "charts");
             var chartPath = Path.Combine(chartRoot, chart.ChartName);
 
             output.WriteDebugLine($"Looking for existing chart in '{chartPath}'.");
@@ -47,15 +58,15 @@ namespace Opulence
                 chartRoot = tempDirectory.DirectoryPath;
                 chartPath = Path.Combine(chartRoot, chart.ChartName);
                 output.WriteDebugLine($"Generating chart in '{chartPath}'.");
-                await HelmChartGenerator.GenerateAsync(output, application, container, chart, new DirectoryInfo(tempDirectory.DirectoryPath));
+                await HelmChartGenerator.GenerateAsync(output, application, service, project, container, chart, new DirectoryInfo(tempDirectory.DirectoryPath));
             }
 
             output.WriteDebugLine("Running 'helm package'.");
-            output.WriteCommandLine("helm", $"package -d \"{outputDirectoryPath}\" --version {application.Version.Replace('+', '-')} --app-version {application.Version.Replace('+', '-')}");
+            output.WriteCommandLine("helm", $"package -d \"{outputDirectoryPath}\" --version {project.Version.Replace('+', '-')} --app-version {project.Version.Replace('+', '-')}");
             var capture = output.Capture();
             var exitCode = await Process.ExecuteAsync(
                 "helm",
-                $"package . -d \"{outputDirectoryPath}\" --version {application.Version.Replace('+', '-')} --app-version {application.Version.Replace('+', '-')}",
+                $"package . -d \"{outputDirectoryPath}\" --version {project.Version.Replace('+', '-')} --app-version {project.Version.Replace('+', '-')}",
                 workingDir: chartPath,
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
@@ -66,7 +77,7 @@ namespace Opulence
                 throw new CommandException("Running 'helm package' failed.");
             }
 
-            output.WriteInfoLine($"Created Helm Chart: {Path.Combine(outputDirectoryPath, chart.ChartName + "-" + application.Version.Replace('+', '-') + ".tgz")}");
+            output.WriteInfoLine($"Created Helm Chart: {Path.Combine(outputDirectoryPath, chart.ChartName + "-" + project.Version.Replace('+', '-') + ".tgz")}");
         }
     }
 }
