@@ -36,7 +36,7 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: nuget source Add -Config nuget.config -Name github -Source https://nuget.pkg.github.com/rynowak/index.json -UserName rynowak -Password ${{ secrets.GITHUB_TOKEN }} -StorePasswordInClearText
 
-    - name: push packages
+    - name: push packages (github)
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: |
           for f in ./artifacts/*.nupkg
@@ -50,3 +50,19 @@ jobs:
               exit 1
             fi
           done
+    - name: push packages (feedz.io)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: |
+        for f in ./artifacts/*.nupkg
+        do
+          nuget push $f -source https://f.feedz.io/opulence/opulence/nuget/index.json -ApiKey ${{ secrets.FEEDZ_TOKEN }}
+          if [ $? -eq 0 ]
+          then
+            echo "successfully pushed $f"
+          else
+            echo "failed to push $f" >&2
+            exit 1
+          fi
+        done
+
+
