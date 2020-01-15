@@ -47,45 +47,23 @@ namespace Opulence
 
             var application = await ApplicationFactory.CreateApplicationAsync(output, projectFile);
 
-            foreach (var service in application.Services)
+            var steps = new ServiceExecutor.Step[]
             {
-                await PackageServiceAsync(output, application, projectFile.FullName, service, environment);
-            }
-
-            await PackageApplicationAsync(output, application, outputDirectory, Path.GetFileNameWithoutExtension(projectFile.Name), environment);
-        }
-
-        private static async Task PackageServiceAsync(OutputContext output, Application application, string solutionFilePath, ServiceEntry service, string environment)
-        {
-            if (!service.HasProject)
-            {
-                output.WriteDebugLine($"Service '{service.FriendlyName}' does not have a project associated. Skipping.");
-                return;
-            }
-
-            if (!service.AppliesToEnvironment(environment))
-            {
-                output.WriteDebugLine($"Service '{service.FriendlyName}' is not part of environment '{environment}'. Skipping.");
-                return;
-            }
-            
-            var steps = new Step[]
-            {
-                new ContainerStep(),
+                new BuildDockerImageStep() { Environment = environment, },
             };
 
-            for (var i = 0; i < steps.Length; i++)
+            var executor = new ServiceExecutor(output, application, steps);
+            foreach (var service in application.Services)
             {
-                var step = steps[i];
-                using (var stepTracker = output.BeginStep(step.DisplayName))
+                if (service.IsMatchForProject(application, projectFile))
                 {
-                    if (step is ContainerStep container)
-                    {
-                        await DockerContainerBuilder.BuildContainerImageAsync(output, application, solutionFilePath, service, (Project)service.Service.Source!, container);
-                    }
-
-                    stepTracker.MarkComplete();
+                    await executor.ExecuteAsync(service);
                 }
+            }
+
+            if (string.Equals(".sln", projectFile.Extension, StringComparison.Ordinal))
+            {
+                await PackageApplicationAsync(output, application, outputDirectory, Path.GetFileNameWithoutExtension(projectFile.Name), environment);
             }
         }
 

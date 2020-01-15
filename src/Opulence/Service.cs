@@ -17,6 +17,8 @@ namespace Opulence
 
         public string Name { get; }
 
+        public GeneratedAssets GeneratedAssets { get; } = new GeneratedAssets();
+
         public Source? Source { get; set; }
 
         public Dictionary<string, object> Environment { get; set; } = new Dictionary<string, object>();

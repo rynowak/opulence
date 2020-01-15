@@ -7,7 +7,7 @@ namespace Opulence
 {
     internal static class DockerContainerBuilder
     {
-        public static async Task BuildContainerImageAsync(OutputContext output, Application application, string solutionFilePath, ServiceEntry service, Project project, ContainerStep container)
+        public static async Task BuildContainerImageAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerInfo container)
         {
             if (output is null)
             {
@@ -17,11 +17,6 @@ namespace Opulence
             if (application is null)
             {
                 throw new ArgumentNullException(nameof(application));
-            }
-
-            if (solutionFilePath is null)
-            {
-                throw new ArgumentNullException(nameof(solutionFilePath));
             }
 
             if (service is null)
@@ -39,11 +34,9 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(container));
             }
 
-            DockerfileGenerator.ApplyContainerDefaults(application, service, project, container);
-
             using var tempFile = TempFile.Create();
             
-            var dockerFilePath = Path.Combine(Path.GetDirectoryName(solutionFilePath)!, Path.GetDirectoryName(project.RelativeFilePath)!, "Dockerfile");
+            var dockerFilePath = Path.Combine(application.GetProjectDirectory(project), Path.GetDirectoryName(project.RelativeFilePath)!, "Dockerfile");
             if (File.Exists(dockerFilePath))
             {
                 output.WriteDebugLine($"Using existing dockerfile '{dockerFilePath}'.");
@@ -60,7 +53,7 @@ namespace Opulence
             var exitCode = await Process.ExecuteAsync(
                 $"docker",
                 $"build . -t {container.ImageName}:{container.ImageTag} -f \"{dockerFilePath}\"",
-                Path.Combine(Path.GetDirectoryName(solutionFilePath)!, Path.GetDirectoryName(project.RelativeFilePath)!),
+                application.GetProjectDirectory(project),
                 stdOut: capture.StdOut,
                 stdErr: capture.StdErr);
 

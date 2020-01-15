@@ -6,7 +6,7 @@ namespace Opulence
 {
     internal static class HelmChartGenerator
     {
-        public static async Task GenerateAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerStep container, HelmChartStep chart, DirectoryInfo outputDirectory)
+        public static async Task GenerateAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerInfo container, HelmChartStep chart, DirectoryInfo outputDirectory)
         {
             if (output is null)
             {
@@ -83,7 +83,7 @@ namespace Opulence
             });
         }
 
-        public static void ApplyHelmChartDefaults(Application application, ServiceEntry service, ContainerStep container, HelmChartStep chart)
+        public static void ApplyHelmChartDefaults(Application application, ServiceEntry service, ContainerInfo container, HelmChartStep chart)
         {
             if (application is null)
             {

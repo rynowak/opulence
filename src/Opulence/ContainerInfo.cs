@@ -1,9 +1,7 @@
 ﻿namespace Opulence
 {
-    public sealed class ContainerStep : Step
+    public sealed class ContainerInfo
     {
-        public override string DisplayName => "Building Docker Container...";
-
         /// <summary>
         /// Gets or sets the name of the base image. If null, the base image will be chosen
         /// based on the project configuration.
@@ -40,6 +38,9 @@
         /// </summary>
         public string? ImageTag { get; set; }
 
+        /// <summary>
+        /// Gets or a sets value which determines whether a multiphase dockerfile is used.
+        /// </summary>
         public bool? UseMultiphaseDockerfile { get; set; }
     }
 }

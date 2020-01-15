@@ -7,7 +7,7 @@ namespace Opulence
 {
     internal static class HelmChartBuilder
     {
-        public static async Task BuildHelmChartAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerStep container, HelmChartStep chart)
+        public static async Task BuildHelmChartAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerInfo container, HelmChartStep chart)
         {
             if (output is null)
             {

@@ -61,11 +61,17 @@ namespace Opulence
                 var capture = output.Capture();
                 var opulenceRoot = Path.GetDirectoryName(typeof(Program).Assembly.Location);
 
+                var restore = string.Empty;
+                if (!File.Exists(Path.Combine(projectFile.DirectoryName, "obj", "project.assets.json")))
+                {
+                    restore = "/restore";
+                }
+
                 output.WriteDebugLine("Running 'dotnet msbuild'.");
-                output.WriteCommandLine("dotnet", $"msbuild /t:EvaluateOpulenceProjectInfo \"/p:OpulenceTargetLocation={opulenceRoot}\" \"/p:OpulenceOutputFilePath={outputFilePath}\"");
+                output.WriteCommandLine("dotnet", $"msbuild {restore} /t:EvaluateOpulenceProjectInfo \"/p:OpulenceTargetLocation={opulenceRoot}\" \"/p:OpulenceOutputFilePath={outputFilePath}\"");
                 var exitCode = await Process.ExecuteAsync(
                     $"dotnet",
-                    $"msbuild /t:EvaluateOpulenceProjectInfo \"/p:OpulenceTargetLocation={opulenceRoot}\" \"/p:OpulenceOutputFilePath={outputFilePath}\"",
+                    $"msbuild {restore} /t:EvaluateOpulenceProjectInfo \"/p:OpulenceTargetLocation={opulenceRoot}\" \"/p:OpulenceOutputFilePath={outputFilePath}\"",
                     workingDir: projectFile.DirectoryName,
                     stdOut: capture.StdOut,
                     stdErr: capture.StdErr);

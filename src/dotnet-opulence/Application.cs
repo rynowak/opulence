@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -10,7 +11,18 @@ namespace Opulence
         public abstract ApplicationGlobals Globals { get; }
 
         public abstract string RootDirectory { get; }
+
         public abstract IReadOnlyList<ServiceEntry> Services { get; }
+
+        public string GetProjectDirectory(Project project)
+        {
+            if (project is null)
+            {
+                throw new ArgumentNullException(nameof(project));
+            }
+
+            return Path.GetDirectoryName(Path.Combine(RootDirectory, project.RelativeFilePath))!;
+        }
     }
 
     internal class ServiceEntry
@@ -41,8 +53,6 @@ namespace Opulence
 
         public List<ServiceOutput> Outputs { get; } = new List<ServiceOutput>();
 
-        public bool HasProject => Service.Source is Project project;
-
         public bool AppliesToEnvironment(string environment)
         {
             if (environment is null)
@@ -51,7 +61,33 @@ namespace Opulence
             }
 
             return Environments.Count  == 0 || Environments.Contains(environment, StringComparer.OrdinalIgnoreCase);
-        } 
+        }
+
+        internal bool IsMatchForProject(Application application, FileInfo projectFile)
+        {
+            if (application is null)
+            {
+                throw new ArgumentNullException(nameof(application));
+            }
+
+            if (projectFile is null)
+            {
+                throw new ArgumentNullException(nameof(projectFile));
+            }
+
+            if (string.Equals(projectFile.Extension, ".sln", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (Service.Source is Project project && 
+                string.Equals(application.GetProjectDirectory(project), projectFile.DirectoryName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return false;
+        }
     }
 
     public abstract class ServiceOutput

@@ -94,6 +94,11 @@ namespace Opulence
                     await ProjectReader.ReadProjectDetailsAsync(output, new FileInfo(projectFilePath), project);
                     
                     service.Service.Source = project;
+
+                    // Apply defaults to everything that has a project.
+                    var container = new ContainerInfo();
+                    service.Service.GeneratedAssets.Container = container;
+                    DockerfileGenerator.ApplyContainerDefaults(wrapper, service, project, container);
                 }
             }
 

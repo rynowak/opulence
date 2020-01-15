@@ -45,16 +45,30 @@ namespace Opulence
                 return application;
             }
 
+            return await InferApplicationForProject(output, projectFile);
+        }
+
+        private static async Task<Application> InferApplicationForProject(OutputContext output, FileInfo projectFile)
+        {
             var globals = new ApplicationGlobals();
             var services = new List<ServiceEntry>();
 
             var name = Path.GetFileNameWithoutExtension(projectFile.Name);
-            services.Add(new ServiceEntry(new Service(name)
-            {
-                Source = new Project(projectFile.FullName),
-            }, name));
-            
-            return new GroveledApplication(globals, projectFile.DirectoryName, services);
+            var project = new Project(projectFile.FullName);
+            var service = new ServiceEntry(new Service(name), name);
+            service.Service.Source = project;
+            services.Add(service);
+
+            await ProjectReader.ReadProjectDetailsAsync(output, projectFile, project);
+
+            var container = new ContainerInfo();
+            service.Service.GeneratedAssets.Container = container;
+
+            var application = new GroveledApplication(globals, projectFile.DirectoryName, services);
+
+            DockerfileGenerator.ApplyContainerDefaults(application, service, project, container);
+
+            return application;
         }
 
         private static async Task<Application> CreateApplicationForSolutionAsync(OutputContext output, FileInfo solutionFile)
@@ -81,6 +95,11 @@ namespace Opulence
                 return application;
             }
 
+            return await InferApplicationForSolution(output, solutionFile, solution);
+        }
+
+        private static async Task<Application> InferApplicationForSolution(OutputContext output, FileInfo solutionFile, SolutionFile solution)
+        {
             var globals = new ApplicationGlobals();
             var services = new List<ServiceEntry>();
             for (var i = 0; i < solution.ProjectsInOrder.Count; i++)
@@ -89,14 +108,30 @@ namespace Opulence
                 var solutionProject = solution.ProjectsInOrder[i];
                 if (solutionProject.AbsolutePath.EndsWith(".csproj", StringComparison.Ordinal))
                 {
-                    services.Add(new ServiceEntry(new Service(solutionProject.ProjectName)
-                    {
-                        Source = new Project(solutionProject.RelativePath.Replace('\\', Path.DirectorySeparatorChar)),
-                    }, solutionProject.ProjectName));
+                    var projectFilePath = solutionProject.RelativePath.Replace('\\', Path.DirectorySeparatorChar);
+                    var projectFile = new FileInfo(projectFilePath);
+
+                    var name = Path.GetFileNameWithoutExtension(projectFile.Name);
+                    var project = new Project(projectFile.FullName);
+                    var service = new ServiceEntry(new Service(name), name);
+                    service.Service.Source = project;
+                    services.Add(service);
+
+                    await ProjectReader.ReadProjectDetailsAsync(output, projectFile, project);
+
+                    var container = new ContainerInfo();
+                    service.Service.GeneratedAssets.Container = container;
                 }
             }
 
-            return new GroveledApplication(globals, solutionFile.DirectoryName, services);
+            var application =  new GroveledApplication(globals, solutionFile.DirectoryName, services);
+
+            foreach (var service in application.Services)
+            {
+                DockerfileGenerator.ApplyContainerDefaults(application, service, (Project)service.Service.Source!, service.Service.GeneratedAssets.Container!);
+            }
+
+            return application;
         }
     }
 }

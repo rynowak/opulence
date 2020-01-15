@@ -8,7 +8,7 @@ namespace Opulence
 {
     internal static class DockerfileGenerator
     {
-        public static async Task WriteDockerfileAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerStep container, string filePath)
+        public static async Task WriteDockerfileAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerInfo container, string filePath)
         {
             if (output is null)
             {
@@ -40,8 +40,6 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(filePath));
             }
 
-            ApplyContainerDefaults(application, service, project, container);
-
             using var stream = File.OpenWrite(filePath);
             using var writer = new StreamWriter(stream, encoding: Encoding.UTF8, leaveOpen: true);
             
@@ -58,7 +56,7 @@ namespace Opulence
             output.WriteDebugLine("Done writing dockerfile.");
         }
 
-        private static async Task WriteMultiphaseDockerfileAsync(StreamWriter writer, string applicationEntryPoint, ContainerStep container)
+        private static async Task WriteMultiphaseDockerfileAsync(StreamWriter writer, string applicationEntryPoint, ContainerInfo container)
         {
             await writer.WriteLineAsync($"FROM {container.BuildImageName}:{container.BuildImageTag} as SDK");
             await writer.WriteLineAsync($"WORKDIR /src");
@@ -70,7 +68,7 @@ namespace Opulence
             await writer.WriteLineAsync($"ENTRYPOINT [\"dotnet\", \"{applicationEntryPoint}.dll\"]");
         }
 
-        private static async Task WriteLocalPublishDockerfileAsync(StreamWriter writer, string applicationEntryPoint, ContainerStep container)
+        private static async Task WriteLocalPublishDockerfileAsync(StreamWriter writer, string applicationEntryPoint, ContainerInfo container)
         {
             await writer.WriteLineAsync($"FROM {container.BaseImageName}:{container.BaseImageTag}");
             await writer.WriteLineAsync($"WORKDIR /app");
@@ -78,7 +76,7 @@ namespace Opulence
             await writer.WriteLineAsync($"ENTRYPOINT [\"dotnet\", \"{applicationEntryPoint}.dll\"]");
         }
 
-        public static void ApplyContainerDefaults(Application application, ServiceEntry service, Project project, ContainerStep container)
+        public static void ApplyContainerDefaults(Application application, ServiceEntry service, Project project, ContainerInfo container)
         {
             if (application is null)
             {
@@ -88,6 +86,11 @@ namespace Opulence
             if (service is null)
             {
                 throw new ArgumentNullException(nameof(service));
+            }
+
+            if (project is null)
+            {
+                throw new ArgumentNullException(nameof(project));
             }
 
             if (container is null)
