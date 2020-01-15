@@ -45,17 +45,7 @@ namespace Opulence
         {
             output.WriteBanner();
 
-            ApplicationEntry application;
-            if (string.Equals(projectFile.Extension, ".sln", StringComparison.Ordinal))
-            {
-                output.WriteInfoLine($"Solution '{projectFile.FullName}' was provided as input.");
-                application = await ApplicationFactory.CreateApplicationForSolutionAsync(output, projectFile);
-            }
-            else
-            {
-                output.WriteInfoLine($"Project '{projectFile.FullName}' was provided as input.");
-                application = await ApplicationFactory.CreateApplicationForProjectAsync(output, projectFile);
-            }
+            var application = await ApplicationFactory.CreateApplicationAsync(output, projectFile);
 
             foreach (var service in application.Services)
             {
@@ -65,7 +55,7 @@ namespace Opulence
             await PackageApplicationAsync(output, application, outputDirectory, Path.GetFileNameWithoutExtension(projectFile.Name), environment);
         }
 
-        private static async Task PackageServiceAsync(OutputContext output, ApplicationEntry application, string solutionFilePath, ServiceEntry service, string environment)
+        private static async Task PackageServiceAsync(OutputContext output, Application application, string solutionFilePath, ServiceEntry service, string environment)
         {
             if (!service.HasProject)
             {
@@ -99,7 +89,7 @@ namespace Opulence
             }
         }
 
-        private static async Task PackageApplicationAsync(OutputContext output, ApplicationEntry application, DirectoryInfo outputDirectory, string applicationName, string environment)
+        private static async Task PackageApplicationAsync(OutputContext output, Application application, DirectoryInfo outputDirectory, string applicationName, string environment)
         {
             var outputFile = Path.Combine(outputDirectory.FullName, $"{applicationName}-{environment}.yaml");
             output.WriteInfoLine($"Writing output to '{outputFile}'.");

@@ -8,7 +8,7 @@ namespace Opulence
 {
     internal static class DockerfileGenerator
     {
-        public static async Task WriteDockerfileAsync(OutputContext output, ApplicationEntry application, ServiceEntry service, Project project, ContainerStep container, string filePath)
+        public static async Task WriteDockerfileAsync(OutputContext output, Application application, ServiceEntry service, Project project, ContainerStep container, string filePath)
         {
             if (output is null)
             {
@@ -78,7 +78,7 @@ namespace Opulence
             await writer.WriteLineAsync($"ENTRYPOINT [\"dotnet\", \"{applicationEntryPoint}.dll\"]");
         }
 
-        public static void ApplyContainerDefaults(ApplicationEntry application, ServiceEntry service, Project project, ContainerStep container)
+        public static void ApplyContainerDefaults(Application application, ServiceEntry service, Project project, ContainerStep container)
         {
             if (application is null)
             {

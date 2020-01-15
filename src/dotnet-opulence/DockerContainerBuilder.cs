@@ -7,7 +7,7 @@ namespace Opulence
 {
     internal static class DockerContainerBuilder
     {
-        public static async Task BuildContainerImageAsync(OutputContext output, ApplicationEntry application, string solutionFilePath, ServiceEntry service, Project project, ContainerStep container)
+        public static async Task BuildContainerImageAsync(OutputContext output, Application application, string solutionFilePath, ServiceEntry service, Project project, ContainerStep container)
         {
             if (output is null)
             {

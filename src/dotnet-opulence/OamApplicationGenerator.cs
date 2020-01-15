@@ -9,7 +9,7 @@ namespace Opulence
 {
     internal static class OamApplicationGenerator
     {
-        public static Task WriteOamApplicationAsync(TextWriter writer, OutputContext output, ApplicationEntry application, string applicationName, string environment)
+        public static Task WriteOamApplicationAsync(TextWriter writer, OutputContext output, Application application, string applicationName, string environment)
         {
             if (writer is null)
             {

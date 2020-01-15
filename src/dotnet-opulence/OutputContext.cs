@@ -8,7 +8,7 @@ namespace Opulence
     {
         private const int IndentAmount = 4;
 
-        private Stack<StepTracker> steps;
+        private readonly Stack<StepTracker> steps;
         private int indent;
 
         public OutputContext(IConsole console, Verbosity verbosity)

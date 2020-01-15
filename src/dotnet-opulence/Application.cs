@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Opulence
 {
-    internal abstract class ApplicationEntry
+    internal abstract class Application
     {
         public abstract ApplicationGlobals Globals { get; }
 
@@ -82,7 +82,7 @@ namespace Opulence
     }
 
 
-    internal class ApplicationWrapper : ApplicationEntry
+    internal class ApplicationWrapper : Application
     {
         private readonly object inner;
         private ApplicationGlobals? globals;
@@ -158,7 +158,7 @@ namespace Opulence
         }
     }
 
-    internal class GroveledApplication : ApplicationEntry
+    internal class GroveledApplication : Application
     {
         public GroveledApplication(ApplicationGlobals globals, string rootDirectory, IEnumerable<ServiceEntry> services)
         {

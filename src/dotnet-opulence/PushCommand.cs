@@ -45,18 +45,7 @@ namespace Opulence
         {
             output.WriteBanner();
 
-            ApplicationEntry application;
-            if (string.Equals(projectFile.Extension, ".sln", StringComparison.Ordinal))
-            {
-                output.WriteInfoLine($"Solution '{projectFile.FullName}' was provided as input.");
-                application = await ApplicationFactory.CreateApplicationForSolutionAsync(output, projectFile);
-            }
-            else
-            {
-                output.WriteInfoLine($"Project '{projectFile.FullName}' was provided as input.");
-                application = await ApplicationFactory.CreateApplicationForProjectAsync(output, projectFile);
-            }
-
+            var application = await ApplicationFactory.CreateApplicationAsync(output, projectFile);
             if (application.Globals.Registry?.Hostname == null)
             {
                 throw new CommandException("A registry is required for push operations. run 'dotnet-opulence init'.");
@@ -77,7 +66,7 @@ namespace Opulence
             }
         }
 
-        private static async Task PackageServiceAsync(OutputContext output, ApplicationEntry application, string solutionFilePath, ServiceEntry service, string environment)
+        private static async Task PackageServiceAsync(OutputContext output, Application application, string solutionFilePath, ServiceEntry service, string environment)
         {
             if (!service.HasProject)
             {

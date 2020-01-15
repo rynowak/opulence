@@ -36,25 +36,15 @@ namespace Opulence
         {
             output.WriteBanner();
 
-            ApplicationEntry application;
-            if (string.Equals(projectFile.Extension, ".sln", StringComparison.Ordinal))
-            {
-                output.WriteInfoLine($"Solution '{projectFile.FullName}' was provided as input.");
-                application = await ApplicationFactory.CreateApplicationForSolutionAsync(output, projectFile);
-            }
-            else
-            {
-                output.WriteInfoLine($"Project '{projectFile.FullName}' was provided as input.");
-                application = await ApplicationFactory.CreateApplicationForProjectAsync(output, projectFile);
-            }
+            var application = await ApplicationFactory.CreateApplicationAsync(output, projectFile);
 
             foreach (var service in application.Services)
             {
-                await GenerateService(output, application, projectFile.FullName, service, outputs, force);
+                await GenerateService(output, application, service, outputs, force);
             }
         }
 
-        private static async Task GenerateService(OutputContext output, ApplicationEntry application, string fullName, ServiceEntry service, List<string> outputs, bool force)
+        private static async Task GenerateService(OutputContext output, Application application, ServiceEntry service, List<string> outputs, bool force)
         {
             if (!service.HasProject)
             {

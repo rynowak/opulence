@@ -8,7 +8,7 @@ namespace Opulence
 {
     internal static class ApplicationFactory
     {
-        public static async Task<ApplicationEntry> CreateApplicationForProjectAsync(OutputContext output, FileInfo projectFile)
+        public static async Task<Application> CreateApplicationAsync(OutputContext output, FileInfo projectFile)
         {
             if (output is null)
             {
@@ -20,6 +20,20 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(projectFile));
             }
 
+            if (string.Equals(projectFile.Extension, ".sln", StringComparison.Ordinal))
+            {
+                output.WriteDebugLine($"Solution '{projectFile.FullName}' was provided as input.");
+                return await CreateApplicationForSolutionAsync(output, projectFile);
+            }
+            else
+            {
+                output.WriteDebugLine($"Project '{projectFile.FullName}' was provided as input.");
+                return await CreateApplicationForProjectAsync(output, projectFile);
+            }
+        }
+
+        private static async Task<Application> CreateApplicationForProjectAsync(OutputContext output, FileInfo projectFile)
+        {
             // Project workflow:
             //
             //  1. Determine if there's an 'Opulence.csx' - use that to initialize the set of services.
@@ -43,18 +57,8 @@ namespace Opulence
             return new GroveledApplication(globals, projectFile.DirectoryName, services);
         }
 
-        public static async Task<ApplicationEntry> CreateApplicationForSolutionAsync(OutputContext output, FileInfo solutionFile)
+        private static async Task<Application> CreateApplicationForSolutionAsync(OutputContext output, FileInfo solutionFile)
         {
-            if (output is null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
-
-            if (solutionFile is null)
-            {
-                throw new ArgumentNullException(nameof(solutionFile));
-            }
-
             // Solution workflow:
             //
             //  1. If there's an 'Opulence.csx' - use that that to initialize the set of services.
