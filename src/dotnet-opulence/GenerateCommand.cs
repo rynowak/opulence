@@ -16,11 +16,7 @@ namespace Opulence
                 StandardOptions.Project,
                 StandardOptions.Verbosity,
                 StandardOptions.Outputs,
-
-                new Option("--force", "Force overwrite of existing files")
-                {
-                    Argument = new Argument<bool>(),
-                },
+                StandardOptions.Force,
             };
 
             command.Handler = CommandHandler.Create<IConsole, FileInfo, Verbosity, List<string>, bool>((console, project, verbosity, outputs, force) =>

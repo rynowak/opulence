@@ -10,6 +10,17 @@ namespace Opulence
     {
         private static readonly string[] AllOutputs = new string[] { "container", "chart", };
 
+        public static Option Force
+        {
+            get
+            {
+                return new Option("--force", "Force overwrite of existing files")
+                {
+                    Argument = new Argument<bool>(),
+                };
+            }
+        }
+
         public static Option Outputs
         {
             get

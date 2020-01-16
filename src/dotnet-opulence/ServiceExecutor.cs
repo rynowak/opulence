@@ -111,6 +111,27 @@ namespace Opulence
                 container = default!;
                 return true;
             }
+
+            protected bool SkipWithoutContainerOutput(OutputContext output, ServiceEntry service)
+            {
+                if (output is null)
+                {
+                    throw new ArgumentNullException(nameof(output));
+                }
+
+                if (service is null)
+                {
+                    throw new ArgumentNullException(nameof(service));
+                }
+
+                if (service.Outputs.OfType<DockerImageOutput>().Any())
+                {
+                    return false;
+                }
+
+                output.WriteInfoLine($"Service '{service.FriendlyName}' does not have a container. Skipping.");
+                return true;
+            }
         }
     }
 }

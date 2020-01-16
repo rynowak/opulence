@@ -36,14 +36,14 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(environment));
             }
 
+            var componentManifests = new List<OamComponentOutput>();
             var documents = new List<YamlDocument>();
 
             foreach (var service in application.Services)
             {
-                var schematic = CreateComponentSchematic(service);
-                if (schematic != null)
+                if (service.AppliesToEnvironment(environment))
                 {
-                    documents.Add(schematic);
+                    componentManifests.AddRange(service.Outputs.OfType<OamComponentOutput>());
                 }
             }
 
@@ -62,18 +62,15 @@ namespace Opulence
             var components = new YamlSequenceNode();
             spec.Add("components", components);
 
-            foreach (var service in application.Services)
+            foreach (var manifest in componentManifests)
             {
-                if (!service.Outputs.OfType<DockerImageOutput>().Any())
-                {
-                    continue;
-                }
+                documents.Add(manifest.Yaml);
 
                 var component = new YamlMappingNode();
                 components.Add(component);
 
-                component.Add("componentName", service.Service.Name);
-                component.Add("instanceName", $"{environment.ToLowerInvariant()}-{service.Service.Name}");
+                component.Add("componentName", manifest.Name);
+                component.Add("instanceName", $"{environment.ToLowerInvariant()}-{manifest.Name}");
             }
 
             documents.Add(new YamlDocument(root));
@@ -82,43 +79,6 @@ namespace Opulence
             stream.Save(writer, assignAnchors: false);
 
             return Task.CompletedTask;
-        }
-
-        private static YamlDocument? CreateComponentSchematic(ServiceEntry service)
-        {
-            var images = service.Outputs.OfType<DockerImageOutput>().ToArray();
-            if (images.Length == 0)
-            {
-                return null;
-            }
-
-            var root = new YamlMappingNode();
-
-            root.Add("kind", "ComponentSchematic");
-            root.Add("apiVersion", "core.oam.dev/v1alpha1");
-
-            var metadata = new YamlMappingNode();
-            root.Add("metadata", metadata);
-            metadata.Add("name", service.Service.Name);
-
-            var spec = new YamlMappingNode(); 
-            root.Add("spec", spec);
-            spec.Add("workloadType", "core.oam.dev/v1alpha1.Server");
-            
-            var containers = new YamlSequenceNode();
-            spec.Add("containers", containers);
-
-            for (var i = 0; i < images.Length; i++)
-            {
-                var image = images[i];
-
-                var container = new YamlMappingNode();
-                containers.Add(container);
-                container.Add("name", service.Service.Name); // NOTE: to really support multiple images we'd need to generate unique names.
-                container.Add("image", $"{image.ImageName}:{image.ImageTag}");
-            }
-
-            return new YamlDocument(root);
         }
     }
 }

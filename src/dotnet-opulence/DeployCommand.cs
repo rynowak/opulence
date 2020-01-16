@@ -1,22 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Opulence
 {
-    public class PackageCommand
+    public class DeployCommand
     {
         public static Command Create()
         {
-            var command = new Command("package", "Package the project")
+            var command = new Command("deploy", "Deploy the application to Kubernetes")
             {
                 StandardOptions.Project,
                 StandardOptions.Verbosity,
-                StandardOptions.Force,
                 new Option(new []{ "-o", "--output" }, "Output directory")
                 {
                     Argument = new Argument<DirectoryInfo>("output", new DirectoryInfo(Environment.CurrentDirectory))
@@ -34,32 +33,31 @@ namespace Opulence
                     Required = false,
                 },
             };
-            command.Handler = CommandHandler.Create<IConsole, FileInfo, DirectoryInfo, string, bool, Verbosity>((console, project, output, environment, force, verbosity) =>
+
+            command.Handler = CommandHandler.Create<IConsole, FileInfo, DirectoryInfo, string, Verbosity>((console, project, output, environment, verbosity) =>
             {
-                return ExecuteAsync(new OutputContext(console, verbosity), project, output, environment, force);
+                return ExecuteAsync(new OutputContext(console, verbosity), project, output, environment);
             });
 
             return command;
         }
 
-        private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile, DirectoryInfo outputDirectory, string environment, bool force)
+        private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile, DirectoryInfo outputDirectory, string environment)
         {
             output.WriteBanner();
 
             var application = await ApplicationFactory.CreateApplicationAsync(output, projectFile);
+            if (application.Globals.Registry?.Hostname == null)
+            {
+                throw new CommandException("A registry is required for push operations. run 'dotnet-opulence init'.");
+            }
 
-            var steps = new List<ServiceExecutor.Step>
+            var steps = new ServiceExecutor.Step[]
             {
                 new BuildDockerImageStep() { Environment = environment, },
+                new PushDockerImageStep() { Environment = environment, },
                 new GenerateOamComponentStep() { Environment = environment, },
             };
-
-            // If this is command is for a project, then write out the component manifest
-            // for just the project.
-            if (!string.Equals(".sln", projectFile.Extension, StringComparison.Ordinal))
-            {
-                steps.Add(new WriteServiceYamlStep(){ OutputDirectory = outputDirectory, Force = force, });
-            }
 
             var executor = new ServiceExecutor(output, application, steps);
             foreach (var service in application.Services)
@@ -78,14 +76,15 @@ namespace Opulence
 
         private static async Task PackageApplicationAsync(OutputContext output, Application application, DirectoryInfo outputDirectory, string applicationName, string environment)
         {
-            using var step = output.BeginStep("Writing Application Manifests...");
             var outputFile = Path.Combine(outputDirectory.FullName, $"{applicationName}-{environment}.yaml");
             output.WriteInfoLine($"Writing output to '{outputFile}'.");
 
             using var stream = File.OpenWrite(outputFile);
             using var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true);
             await OamApplicationGenerator.WriteOamApplicationAsync(writer, output, application, applicationName, environment);
-            step.MarkComplete();
         }
     }
 }
+
+
+// https://kubernetes.io/docs/reference/using-api/api-concepts/#server-side-apply
