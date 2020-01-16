@@ -20,7 +20,7 @@ namespace Opulence
             if (yaml.Length == 0)
             {
                 output.WriteDebugLine($"No yaml manifests found for service '{service.FriendlyName}'. Skipping.");
-                return Task.CompletedTask;;
+                return Task.CompletedTask;
             }
 
             var outputFilePath = Path.Combine(OutputDirectory.FullName, $"{service.Service.Name}.yaml");

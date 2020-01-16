@@ -10,6 +10,21 @@ namespace Opulence
     {
         private static readonly string[] AllOutputs = new string[] { "container", "chart", };
 
+        public static Option Environment
+        {
+            get
+            {
+                return new Option(new []{ "-e", "--environment" }, "Environemnt")
+                {
+                    Argument = new Argument<string>("environment", "production")
+                    {
+                        Arity = ArgumentArity.ExactlyOne,
+                    },
+                    Required = false,
+                };
+            }
+        }
+
         public static Option Force
         {
             get

@@ -2,7 +2,6 @@ using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Opulence
@@ -15,33 +14,18 @@ namespace Opulence
             {
                 StandardOptions.Project,
                 StandardOptions.Verbosity,
-                new Option(new []{ "-o", "--output" }, "Output directory")
-                {
-                    Argument = new Argument<DirectoryInfo>("output", new DirectoryInfo(Environment.CurrentDirectory))
-                    {
-                        Arity = ArgumentArity.ExactlyOne,
-                    },
-                    Required = false,
-                },
-                new Option(new []{ "-e", "--environment" }, "Environemnt")
-                {
-                    Argument = new Argument<string>("environment", "production")
-                    {
-                        Arity = ArgumentArity.ExactlyOne,
-                    },
-                    Required = false,
-                },
+                StandardOptions.Environment,
             };
 
-            command.Handler = CommandHandler.Create<IConsole, FileInfo, DirectoryInfo, string, Verbosity>((console, project, output, environment, verbosity) =>
+            command.Handler = CommandHandler.Create<IConsole, FileInfo, string, Verbosity>((console, project, environment, verbosity) =>
             {
-                return ExecuteAsync(new OutputContext(console, verbosity), project, output, environment);
+                return ExecuteAsync(new OutputContext(console, verbosity), project, environment);
             });
 
             return command;
         }
 
-        private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile, DirectoryInfo outputDirectory, string environment)
+        private static async Task ExecuteAsync(OutputContext output, FileInfo projectFile, string environment)
         {
             output.WriteBanner();
 

@@ -16,6 +16,7 @@ namespace Opulence
             command.AddCommand(GenerateCommand.Create());
             command.AddCommand(PackageCommand.Create());
             command.AddCommand(PushCommand.Create());
+            command.AddCommand(DeployCommand.Create());
 
             command.Description = "White-Glove Service for .NET and Kubernetes";
             command.Handler = CommandHandler.Create<IHelpBuilder>(help =>

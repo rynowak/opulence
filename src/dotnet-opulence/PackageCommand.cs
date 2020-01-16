@@ -17,17 +17,10 @@ namespace Opulence
                 StandardOptions.Project,
                 StandardOptions.Verbosity,
                 StandardOptions.Force,
+                StandardOptions.Environment,
                 new Option(new []{ "-o", "--output" }, "Output directory")
                 {
                     Argument = new Argument<DirectoryInfo>("output", new DirectoryInfo(Environment.CurrentDirectory))
-                    {
-                        Arity = ArgumentArity.ExactlyOne,
-                    },
-                    Required = false,
-                },
-                new Option(new []{ "-e", "--environment" }, "Environemnt")
-                {
-                    Argument = new Argument<string>("environment", "production")
                     {
                         Arity = ArgumentArity.ExactlyOne,
                     },
@@ -55,7 +48,7 @@ namespace Opulence
             };
 
             // If this is command is for a project, then write out the component manifest
-            // for just the project.
+            // for just the project. We won't run the "application package" part.
             if (!string.Equals(".sln", projectFile.Extension, StringComparison.Ordinal))
             {
                 steps.Add(new WriteServiceYamlStep(){ OutputDirectory = outputDirectory, Force = force, });
