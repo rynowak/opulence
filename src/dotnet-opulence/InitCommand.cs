@@ -149,7 +149,7 @@ namespace Opulence
                 {
                     var fileName = Path.GetFileNameWithoutExtension(project.RelativePath.Replace('\\', Path.DirectorySeparatorChar));
 
-                    yield return (fileName.Replace('.', '_'), fileName.Replace('.', '-').ToLowerInvariant());
+                    yield return (fileName.Replace('.', '_').Replace('-', '_'), fileName.Replace('.', '-').ToLowerInvariant());
                 }
             }
         }

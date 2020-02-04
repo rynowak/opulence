@@ -136,6 +136,13 @@ namespace Opulence
                         }
                     }
 
+                    // Prefer solution if both are in the same directory. This helps
+                    // avoid some conflicts.
+                    if (matches.Any(m => m.EndsWith(".sln")))
+                    {
+                        matches.RemoveAll(m => m.EndsWith(".csproj"));
+                    }
+
                     if (matches.Count == 0)
                     {
                         errorMessage = $"No project file or solution file was found in directory '{directoryPath}'.";
