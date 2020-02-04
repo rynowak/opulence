@@ -44,8 +44,24 @@ namespace Opulence
             var steps = new List<ServiceExecutor.Step>
             {
                 new BuildDockerImageStep() { Environment = environment, },
-                new GenerateOamComponentStep() { Environment = environment, },
             };
+
+            if (application.Globals.DeploymentKind == DeploymentKind.None)
+            {
+                // No extra steps
+            }
+            else if (application.Globals.DeploymentKind == DeploymentKind.Kubernetes)
+            {
+                steps.Add(new GenerateKubernetesManifestStep() { Environment = environment, });
+            }
+            else if (application.Globals.DeploymentKind == DeploymentKind.Oam)
+            {
+                steps.Add(new GenerateOamComponentStep() { Environment = environment, });
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unknown DeploymentKind: " + application.Globals.DeploymentKind);
+            }
 
             // If this is command is for a project, then write out the component manifest
             // for just the project. We won't run the "application package" part.
@@ -75,9 +91,27 @@ namespace Opulence
             var outputFile = Path.Combine(outputDirectory.FullName, $"{applicationName}-{environment}.yaml");
             output.WriteInfoLine($"Writing output to '{outputFile}'.");
 
+            File.Delete(outputFile);
             using var stream = File.OpenWrite(outputFile);
             using var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true);
-            await OamApplicationGenerator.WriteOamApplicationAsync(writer, output, application, applicationName, environment);
+
+            if (application.Globals.DeploymentKind == DeploymentKind.None)
+            {
+                // No extra steps
+            }
+            else if (application.Globals.DeploymentKind == DeploymentKind.Kubernetes)
+            {
+                await ApplicationYamlWriter.WriteAsync(output, writer, application);
+            }
+            else if (application.Globals.DeploymentKind == DeploymentKind.Oam)
+            {
+                await OamApplicationGenerator.WriteOamApplicationAsync(writer, output, application, applicationName, environment);
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unknown DeploymentKind: " + application.Globals.DeploymentKind);
+            }
+
             step.MarkComplete();
         }
     }

@@ -6,7 +6,7 @@ public class Application
 {
     public ApplicationGlobals Globals { get; } = new ApplicationGlobals()
     {
-        Registry = new ContainerRegistry("rynowak.azurecr.io"),
+        Registry = new ContainerRegistry("rynowak"),
     };
 
     // Define more services and dependencies here as your application grows.

@@ -51,6 +51,8 @@ namespace Opulence
         private static async Task<Application> InferApplicationForProject(OutputContext output, FileInfo projectFile)
         {
             var globals = new ApplicationGlobals();
+            globals.Name = Names.NormalizeToDns(Path.GetFileNameWithoutExtension(projectFile.Name));
+
             var services = new List<ServiceEntry>();
 
             var name = Path.GetFileNameWithoutExtension(projectFile.Name);
@@ -101,6 +103,9 @@ namespace Opulence
         private static async Task<Application> InferApplicationForSolution(OutputContext output, FileInfo solutionFile, SolutionFile solution)
         {
             var globals = new ApplicationGlobals();
+
+            globals.Name = Names.NormalizeToDns(Path.GetFileNameWithoutExtension(solutionFile.Name));
+
             var services = new List<ServiceEntry>();
             for (var i = 0; i < solution.ProjectsInOrder.Count; i++)
             {

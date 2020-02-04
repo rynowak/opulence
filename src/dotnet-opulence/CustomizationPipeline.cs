@@ -13,10 +13,11 @@ namespace Opulence
 
         private readonly OutputContext output;
         private readonly string rootDirectory;
+        private readonly string name;
         private readonly SolutionFile? solution;
         private readonly FileInfo? projectFile;
 
-        public CustomizationPipeline(OutputContext output, string rootDirectory, SolutionFile? solution, FileInfo? projectFile)
+        public CustomizationPipeline(OutputContext output, string rootDirectory, string name, SolutionFile? solution, FileInfo? projectFile)
         {
             if (output is null)
             {
@@ -28,8 +29,14 @@ namespace Opulence
                 throw new ArgumentNullException(nameof(rootDirectory));
             }
 
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             this.output = output;
             this.rootDirectory = rootDirectory;
+            this.name = name;
             this.solution = solution;
             this.projectFile = projectFile;
         }
@@ -57,6 +64,8 @@ namespace Opulence
 
             var wrapper = new ApplicationWrapper(application!, rootDirectory);
 
+            wrapper.Globals.Name ??= name;
+
             foreach (var service in wrapper.Services)
             {
                 output.WriteDebugLine($"Found service '{service.FriendlyName} {{ Name: {service.Service.Name} }}'.");
@@ -78,7 +87,8 @@ namespace Opulence
                 }
                 else if (projectFile != null)
                 {
-                    if (!string.Equals(Path.GetFileNameWithoutExtension(projectFile.Name), service.FriendlyName))
+                    var normalized = Names.NormalizeToFriendly(Path.GetFileNameWithoutExtension(projectFile.Name));
+                    if (!string.Equals(normalized, service.FriendlyName))
                     {
                         output.WriteDebugLine($"Skipping service '{service.FriendlyName}'.");
                         continue;
@@ -134,7 +144,9 @@ namespace Opulence
             for (var i = 0; i < solution.ProjectsInOrder.Count; i++)
             {
                 var project = solution.ProjectsInOrder[i];
-                if (string.Equals(project.ProjectName, projectName, StringComparison.Ordinal) && 
+                var normalized = Names.NormalizeToFriendly(project.ProjectName);
+
+                if (string.Equals(normalized, projectName, StringComparison.Ordinal) && 
                     project.AbsolutePath.EndsWith(".csproj", StringComparison.Ordinal))
                 {
                     return project;

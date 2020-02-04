@@ -57,7 +57,12 @@ namespace Opulence
                 }
                 output.WriteDebugLine($"Done compiling {Path.GetFileName(scriptFilePath)}'.");
 
-                var pipeline = new CustomizationPipeline(output, rootDirectory: Path.GetDirectoryName(scriptFilePath)!, solution: null, projectFile);
+                var pipeline = new CustomizationPipeline(
+                    output, 
+                    rootDirectory: Path.GetDirectoryName(scriptFilePath)!,
+                    name: Names.NormalizeToDns(Path.GetFileNameWithoutExtension(projectFile.Name)),
+                    solution: null, 
+                    projectFile);
                 var holder = new PipelineHolder(pipeline);
 
                 output.WriteDebugLine($"Running {Path.GetFileName(scriptFilePath)}'.");
@@ -133,7 +138,12 @@ namespace Opulence
                 }
                 output.WriteDebugLine($"Done compiling {Path.GetFileName(scriptFilePath)}'.");
 
-                var pipeline = new CustomizationPipeline(output, Path.GetDirectoryName(scriptFilePath)!, solution, projectFile: null);
+                var pipeline = new CustomizationPipeline(
+                    output, 
+                    rootDirectory: Path.GetDirectoryName(scriptFilePath)!, 
+                    name: Names.NormalizeToDns(Path.GetFileNameWithoutExtension(solutionFile.Name)),
+                    solution, 
+                    projectFile: null);
                 var holder = new PipelineHolder(pipeline);
 
                 output.WriteDebugLine($"Running {Path.GetFileName(scriptFilePath)}'.");

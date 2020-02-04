@@ -111,7 +111,7 @@ namespace Opulence
 
             using (var step = output.BeginStep("Writing Opulence.csx ..."))
             {
-                var hostname = output.Prompt("Enter the Container Registry Hostname (ex: example.azurecr.io)");
+                var hostname = output.Prompt("Enter the Container Registry (ex: 'example.azurecr.io' for Azure or 'example' for dockerhub)");
 
                 var services = new List<(string, string)>();
                 if (solutionFilePath != null && output.Confirm($"Use solution file '{solutionFilePath}' to initialize services?"))
@@ -149,7 +149,7 @@ namespace Opulence
                 {
                     var fileName = Path.GetFileNameWithoutExtension(project.RelativePath.Replace('\\', Path.DirectorySeparatorChar));
 
-                    yield return (fileName.Replace('.', '_').Replace('-', '_'), fileName.Replace('.', '-').ToLowerInvariant());
+                    yield return (Names.NormalizeToFriendly(fileName), Names.NormalizeToDns(fileName));
                 }
             }
         }

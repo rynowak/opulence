@@ -41,14 +41,30 @@ namespace Opulence
             {
                 new BuildDockerImageStep() { Environment = environment, },
                 new PushDockerImageStep() { Environment = environment, },
-                new GenerateOamComponentStep() { Environment = environment, },
             };
+
+            if (application.Globals.DeploymentKind == DeploymentKind.None)
+            {
+                // No extra steps
+            }
+            else if (application.Globals.DeploymentKind == DeploymentKind.Kubernetes)
+            {
+                steps.Add(new GenerateKubernetesManifestStep() { Environment = environment, });
+            }
+            else if (application.Globals.DeploymentKind == DeploymentKind.Oam)
+            {
+                steps.Add(new GenerateOamComponentStep() { Environment = environment, });
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unknown DeploymentKind: " + application.Globals.DeploymentKind);
+            }
 
             // If this is command is for a project, then deploy the component manifest
             // for just the project. We won't run the "application deploy" part.
             if (!string.Equals(".sln", projectFile.Extension, StringComparison.Ordinal))
             {
-                steps.Add(new DeployServiceYamlStep(){ Environment = environment, });
+                steps.Add(new DeployServiceYamlStep() { Environment = environment, });
             }
 
             var executor = new ServiceExecutor(output, application, steps);
@@ -76,7 +92,23 @@ namespace Opulence
             {
                 using var stream = File.OpenWrite(tempFile.FilePath);
                 using var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true);
-                await OamApplicationGenerator.WriteOamApplicationAsync(writer, output, application, applicationName, environment);
+
+                if (application.Globals.DeploymentKind == DeploymentKind.None)
+                {
+                    // No extra steps
+                }
+                else if (application.Globals.DeploymentKind == DeploymentKind.Kubernetes)
+                {
+                    await ApplicationYamlWriter.WriteAsync(output, writer, application);
+                }
+                else if (application.Globals.DeploymentKind == DeploymentKind.Oam)
+                {
+                    await OamApplicationGenerator.WriteOamApplicationAsync(writer, output, application, applicationName, environment);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Unknown DeploymentKind: " + application.Globals.DeploymentKind);
+                }
             }
 
             output.WriteDebugLine("Running 'kubectl apply'.");
