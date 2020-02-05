@@ -10,6 +10,12 @@ What Opulence can do:
 - Make secret management and service discovery easy. (in progress)
 - Let you configure all of this with C# code! (`.csx`)
 
+## Current Status
+
+![CI](https://github.com/rynowak/opulence/workflows/CI/badge.svg)
+
+Opulence is an experiment I've been working on in my spare time. Right now it's got a feature set based on my interests :)
+
 ## Installing dotnet-opulence
 
 First, install the [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) (or newer if you are viewing this in the far future).
