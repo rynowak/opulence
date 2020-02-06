@@ -126,6 +126,20 @@ namespace Opulence
                 container.Add("name", service.Service.Name); // NOTE: to really support multiple images we'd need to generate unique names.
                 container.Add("image", $"{image.ImageName}:{image.ImageTag}");
 
+                if (service.Service.Bindings.Count > 0 || service.Service.Environment.Count > 0)
+                {
+                    var env = new YamlSequenceNode();
+                    container.Add("env", env);
+
+                    foreach (var binding in service.Service.Bindings)
+                    {
+                        env.Add(new YamlMappingNode()
+                        {
+                            { $"SERVICES__{binding.Name}", $"{binding.Protocol}://{binding.Name}:{binding.Port}" },
+                        });
+                    }
+                }
+
                 var ports = new YamlSequenceNode();
                 container.Add("ports", ports);
 

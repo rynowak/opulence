@@ -9,7 +9,6 @@ public class Application
         Registry = new ContainerRegistry("rynowak"),
     };
 
-    // Define more services and dependencies here as your application grows.
     public Service TodoWeb { get; } = new Service("todo-web");
 
     public Service TodoWorker { get; } = new Service("todo-worker");
@@ -17,5 +16,5 @@ public class Application
 
 Pipeline.Configure<Application>(app =>
 {
-    // Configure your service bindings here with code.
+    app.TodoWeb.Bindings.Add(ServiceBinding.FromService(app.TodoWorker));
 });
