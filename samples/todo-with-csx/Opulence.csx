@@ -12,9 +12,18 @@ public class Application
     public Service TodoWeb { get; } = new Service("todo-web");
 
     public Service TodoWorker { get; } = new Service("todo-worker");
+
+    [Environment("development")]
+    public Service Redis { get; } = new Service("redis")
+    {
+        Port = 6379,
+        Protocol = "redis",
+    };
 }
 
 Pipeline.Configure<Application>(app =>
 {
-    app.TodoWeb.Bindings.Add(ServiceBinding.FromService(app.TodoWorker));
+    app.TodoWeb.Bindings.Add(new ServiceBinding(app.TodoWorker));
+
+    app.TodoWorker.Bindings.Add(new ServiceBinding(app.Redis));
 });

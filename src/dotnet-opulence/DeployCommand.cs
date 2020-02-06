@@ -39,6 +39,7 @@ namespace Opulence
 
             var steps = new List<ServiceExecutor.Step>()
             {
+                new CombineStep() { Environment = environment, },
                 new BuildDockerImageStep() { Environment = environment, },
                 new PushDockerImageStep() { Environment = environment, },
             };

@@ -4,26 +4,30 @@ namespace Opulence
 {
     public class ServiceBinding
     {
-        public static ServiceBinding FromService(Service service)
+        public ServiceBinding(string name)
+        {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            Name = name;
+        }
+
+        public ServiceBinding(Service service)
         {
             if (service is null)
             {
                 throw new ArgumentNullException(nameof(service));
             }
 
-            return new ServiceBinding()
-            {
-                Name = service.Name,
-                Protocol = "http",
-                Port = 80,
-            };
+            Name = service.Name;
+
+            // We don't copy other properties here because a "hardcoded" value of Protocol/Port is treated differently
+            // from just binding the name when considering environments.
         }
 
-        public ServiceBinding()
-        {
-        }
-
-        public string? Name { get; set; }
+        public string Name { get; set; }
         public string? Protocol { get; set; }
         public int? Port { get; set; }
         public Secret? ConnectionString { get; set; }

@@ -126,17 +126,34 @@ namespace Opulence
                 container.Add("name", service.Service.Name); // NOTE: to really support multiple images we'd need to generate unique names.
                 container.Add("image", $"{image.ImageName}:{image.ImageTag}");
 
-                if (service.Service.Bindings.Count > 0 || service.Service.Environment.Count > 0)
+                if (service.Service.Environment.Count > 0)
                 {
                     var env = new YamlSequenceNode();
                     container.Add("env", env);
 
-                    foreach (var binding in service.Service.Bindings)
+                    foreach (var kvp in service.Service.Environment)
                     {
                         env.Add(new YamlMappingNode()
                         {
-                            { $"SERVICES__{binding.Name}", $"{binding.Protocol}://{binding.Name}:{binding.Port}" },
+                            { "name", kvp.Key },
+                            { "value", kvp.Value.ToString() },
                         });
+                    }
+                }
+
+                if (service.Service.Bindings.Any(b => b.ConnectionString != null))
+                {
+                    var volumeMounts = new YamlSequenceNode();
+                    container.Add("volumeMounts", volumeMounts);
+
+                    foreach (var binding in service.Service.Bindings.Where(b => b.ConnectionString != null))
+                    {
+                        var volumeMount = new YamlMappingNode();
+                        volumeMounts.Add(volumeMount);
+
+                        volumeMount.Add("name", $"{binding.Name}-secret");
+                        volumeMount.Add("mountPath", $"/var/bindings/{binding.Name}");
+                        volumeMount.Add("readOnly", "true");
                     }
                 }
 
@@ -146,6 +163,31 @@ namespace Opulence
                 var containerPort = new YamlMappingNode();
                 ports.Add(containerPort);
                 containerPort.Add("containerPort", "80");
+            }
+
+            if (service.Service.Bindings.Any(b => b.ConnectionString != null))
+            {
+                var volumes = new YamlSequenceNode();
+                spec.Add("volumes", volumes);
+
+                foreach (var binding in service.Service.Bindings.Where(b => b.ConnectionString != null))
+                {
+                    var volume = new YamlMappingNode();
+                    volumes.Add(volume);
+                    volume.Add("name", $"{binding.Name}-secret");
+
+                    var secret = new YamlMappingNode();
+                    volume.Add("secret", secret);
+                    secret.Add("secretName", binding.ConnectionString!.Name!);
+
+                    var items = new YamlSequenceNode();
+                    secret.Add("items", items);
+
+                    var item = new YamlMappingNode();
+                    items.Add(item);
+                    item.Add("key", "uri");
+                    item.Add("path", $"SERVICES__{binding.Name}");
+                }
             }
 
             return new KubernetesDeploymentOutput(service.Service.Name, new YamlDocument(root));
