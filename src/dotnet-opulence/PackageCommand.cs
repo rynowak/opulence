@@ -20,7 +20,7 @@ namespace Opulence
                 StandardOptions.Environment,
                 new Option(new []{ "-o", "--output" }, "Output directory")
                 {
-                    Argument = new Argument<DirectoryInfo>("output", new DirectoryInfo(Environment.CurrentDirectory))
+                    Argument = new Argument<DirectoryInfo>("output", () => new DirectoryInfo(Environment.CurrentDirectory))
                     {
                         Arity = ArgumentArity.ExactlyOne,
                     },
