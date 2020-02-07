@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 
@@ -16,7 +17,7 @@ namespace Opulence
             {
                 return new Option(new []{ "-e", "--environment" }, "Environemnt")
                 {
-                    Argument = new Argument<string>("environment", "production")
+                    Argument = new Argument<string>("environment", () => "production")
                     {
                         Arity = ArgumentArity.ExactlyOne,
                     },
@@ -77,43 +78,12 @@ namespace Opulence
         {
             get
             {
-                // This dance is necessary to try and put the intialization and validation
-                // of the project file in a single code path, and have the command line system
-                // be responsible for reporting the errors.
 
-                var argument = new Argument<FileInfo>(TryConvert)
+                var argument = new Argument<FileInfo>(TryParse, isDefault: true)
                 {
                     Arity = ArgumentArity.ZeroOrOne,
                     Name = "project-file or solution-file or directory",
                 };
-
-                argument.SetDefaultValue(() =>
-                {
-                    var directoryPath = Path.GetFullPath(".");
-                    if (TryFindProjectFile(directoryPath, out var projectFilePath, out var errorMessage))
-                    {
-                        return new FileInfo(projectFilePath);
-                    }
-                    else
-                    {
-                        // This might be called when we're not going to find anything. 
-                        // Just return null for now, and the validator will catch it.
-                        return null;
-                    }
-                });
-
-                argument.AddValidator(r =>
-                {
-                    var directoryPath = Path.GetFullPath(".");
-                    if (TryFindProjectFile(directoryPath, out var projectFilePath, out var errorMessage))
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        return errorMessage;
-                    }
-                });
 
                 return new Option(new [] { "-p", "--project", }, "Project file, Solution file or directory")
                 {
@@ -163,33 +133,35 @@ namespace Opulence
                     }
                 }
 
-                static bool TryConvert(SymbolResult symbol, out FileInfo file)
+                static FileInfo TryParse(ArgumentResult result)
                 {
-                    var token = symbol.Token.Value;
+                    var token = result.Tokens.Count switch
+                    {
+                        0 => ".",
+                        1 => result.Tokens[0].Value,
+                        _ => throw new InvalidOperationException("Unexpected token count."),
+                    };
+
                     if (File.Exists(token))
                     {
-                        file = new FileInfo(token);
-                        return true;
+                        return new FileInfo(token);
                     }
 
                     if (Directory.Exists(token))
                     {
                         if (TryFindProjectFile(token, out var filePath, out var errorMessage))
                         {
-                            file = new FileInfo(filePath);
-                            return true;
+                            return new FileInfo(filePath);
                         }
                         else
                         {
-                            symbol.ErrorMessage = errorMessage;
-                            file = default!;
-                            return false;
+                            result.ErrorMessage = errorMessage;
+                            return default!;
                         }
                     }
 
-                    symbol.ErrorMessage = $"The file '{token}' could not be found.";
-                    file = default!;
-                    return false;
+                    result.ErrorMessage = $"The file '{token}' could not be found.";
+                    return default!;
                 }
             }
         }
@@ -200,7 +172,7 @@ namespace Opulence
             {
                 return new Option(new [] { "-v", "--verbosity" }, "Output verbostiy")
                 {
-                    Argument = new Argument<Verbosity>("one of: quiet|info|debug", Opulence.Verbosity.Info)
+                    Argument = new Argument<Verbosity>("one of: quiet|info|debug", () => Opulence.Verbosity.Info)
                     {
                         Arity = ArgumentArity.ExactlyOne,
                     },

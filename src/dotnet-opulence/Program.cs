@@ -1,7 +1,10 @@
 using System;
 using System.CommandLine;
 using System.CommandLine.Builder;
+using System.CommandLine.Help;
 using System.CommandLine.Invocation;
+using System.CommandLine.IO;
+using System.CommandLine.Parsing;
 using System.CommandLine.Rendering;
 using System.Threading.Tasks;
 
@@ -56,7 +59,7 @@ namespace Opulence
             }
             else if (exception is CommandException command)
             {
-                context.Console.Error.WriteLine($"Drats! '{context.ParseResult.CommandResult.Name}' failed:");
+                context.Console.Error.WriteLine($"Drats! '{context.ParseResult.CommandResult.Command.Name}' failed:");
                 context.Console.Error.WriteLine($"\t{command.Message}");
 
                 if (command.InnerException != null)
