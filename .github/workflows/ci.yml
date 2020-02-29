@@ -32,24 +32,6 @@ jobs:
       with:
         nuget-version: latest
 
-    - name: add package repository
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: nuget source Add -Config nuget.config -Name github -Source https://nuget.pkg.github.com/rynowak/index.json -UserName rynowak -Password ${{ secrets.GITHUB_TOKEN }} -StorePasswordInClearText
-
-    - name: push packages (github)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: |
-          for f in ./artifacts/*.nupkg
-          do
-            curl --silent --show-error --fail -vX PUT -u "rynowak:${{ secrets.GITHUB_TOKEN }}" -F package=@$f https://nuget.pkg.github.com/rynowak/
-            if [ $? -eq 0 ]
-            then
-              echo "successfully pushed $f"
-            else
-              echo "failed to push $f" >&2
-              exit 1
-            fi
-          done
     - name: push packages (feedz.io)
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: |
